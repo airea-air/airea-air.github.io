@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Export Photos Portrait</title>
+  <title>Export Photos Portrait Rognées</title>
   <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
@@ -27,10 +27,11 @@
     const cmToPx = cm => Math.round(cm / 2.54 * 96);
     const TARGET_W = cmToPx(5.25); // ≈198 px
     const TARGET_H = cmToPx(7);    // ≈265 px
+    const TARGET_RATIO = TARGET_W / TARGET_H; // = 4/3 portrait
 
     let images = []; // contiendra { buffer, previewURL }
 
-    // charge + normalise + encode en JPEG (qualité 0.8)
+    // charge, normalise, rogner au centre, resize & encode en JPEG
     async function processFile(file, previewImgEl) {
       // 1. lire en DataURL
       const dataURL = await new Promise(r => {
@@ -39,20 +40,42 @@
         fr.readAsDataURL(file);
       });
       // 2. normalisation EXIF via blueimp-load-image
-      const { canvas } = await new Promise((resolve, reject) => {
+      const { canvas: normCanvas } = await new Promise((resolve, reject) => {
         loadImage(
           dataURL,
           imgOrCanvas => resolve({ canvas: imgOrCanvas }),
           { orientation: true, canvas: true }
         );
       });
-      // 3. canvas → Blob JPEG
+      // 3. rognage central au ratio TARGET_RATIO
+      const w = normCanvas.width, h = normCanvas.height;
+      let sx, sy, sw, sh;
+      if (w / h > TARGET_RATIO) {
+        // trop large → rogner sur la largeur
+        sh = h;
+        sw = h * TARGET_RATIO;
+        sx = (w - sw) / 2;
+        sy = 0;
+      } else {
+        // trop haut → rogner sur la hauteur
+        sw = w;
+        sh = w / TARGET_RATIO;
+        sx = 0;
+        sy = (h - sh) / 2;
+      }
+      // 4. dessiner dans un canvas cible
+      const targetCanvas = document.createElement('canvas');
+      targetCanvas.width = TARGET_W;
+      targetCanvas.height = TARGET_H;
+      const ctx = targetCanvas.getContext('2d');
+      ctx.drawImage(normCanvas, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
+      // 5. exporter JPEG
       return new Promise((resolve, reject) => {
-        canvas.toBlob(blob => {
+        targetCanvas.toBlob(blob => {
           const fr = new FileReader();
           fr.onload = () => {
-            const buffer = fr.result;                      // ArrayBuffer pour Excel/Word
-            const previewURL = URL.createObjectURL(blob);  // URL pour l’aperçu
+            const buffer = fr.result;                     
+            const previewURL = URL.createObjectURL(blob); 
             previewImgEl.src = previewURL;
             resolve({ buffer, previewURL });
           };
@@ -103,8 +126,7 @@
           })
         ]
       }));
-      const table = new Table({ rows });
-      doc.addSection({ children: [table] });
+      doc.addSection({ children: [new Table({ rows })] });
       const blob = await Packer.toBlob(doc);
       saveAs(blob, 'photos.docx');
     });
@@ -115,9 +137,9 @@
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('Photos');
       // ajustement colonnes/lignes pour la taille cm → points/caractères
-      ws.getColumn(1).width = TARGET_W * 0.14;
-      ws.getRow(1).height = TARGET_H * 0.75;
-      ws.getRow(2).height = TARGET_H * 0.75;
+      ws.getColumn(1).width = TARGET_W * 0.14;         // colonne A
+      ws.getRow(1).height = TARGET_H * 0.75;           // ligne 1
+      ws.getRow(2).height = TARGET_H * 0.75;           // ligne 2
 
       images.forEach((img, i) => {
         const id = wb.addImage({ buffer: img.buffer, extension: 'jpeg' });
