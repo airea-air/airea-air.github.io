@@ -30,13 +30,15 @@
 
     let images = []; // contiendra { buffer, previewURL }
 
-    // charge + normalise + encode en WebP
+    // charge + normalise + encode en JPEG (qualité 0.8)
     async function processFile(file, previewImgEl) {
+      // 1. lire en DataURL
       const dataURL = await new Promise(r => {
         const fr = new FileReader();
         fr.onload = () => r(fr.result);
         fr.readAsDataURL(file);
       });
+      // 2. normalisation EXIF via blueimp-load-image
       const { canvas } = await new Promise((resolve, reject) => {
         loadImage(
           dataURL,
@@ -44,18 +46,19 @@
           { orientation: true, canvas: true }
         );
       });
+      // 3. canvas → Blob JPEG
       return new Promise((resolve, reject) => {
         canvas.toBlob(blob => {
           const fr = new FileReader();
           fr.onload = () => {
-            const buffer = fr.result;
-            const previewURL = URL.createObjectURL(blob);
+            const buffer = fr.result;                      // ArrayBuffer pour Excel/Word
+            const previewURL = URL.createObjectURL(blob);  // URL pour l’aperçu
             previewImgEl.src = previewURL;
             resolve({ buffer, previewURL });
           };
           fr.onerror = reject;
           fr.readAsArrayBuffer(blob);
-        }, 'image/webp', 0.8);
+        }, 'image/jpeg', 0.8);
       });
     }
 
@@ -68,7 +71,6 @@
         input.onchange = async () => {
           const file = input.files[0];
           images[idx] = await processFile(file, document.getElementById(previewId));
-          // activer exports si on a deux images
           if (images[0] && images[1]) {
             exportDocxBtn.disabled = false;
             exportXlsxBtn.disabled = false;
@@ -112,13 +114,13 @@
     exportXlsxBtn.addEventListener('click', async () => {
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('Photos');
-      // ajuster la taille de la colonne A pour TARGET_W
-      ws.getColumn(1).width = TARGET_W * 0.14; // ExcelJS width approximé en caractères
-      ws.getRow(1).height = TARGET_H * 0.75;   // ExcelJS row.height en points
+      // ajustement colonnes/lignes pour la taille cm → points/caractères
+      ws.getColumn(1).width = TARGET_W * 0.14;
+      ws.getRow(1).height = TARGET_H * 0.75;
+      ws.getRow(2).height = TARGET_H * 0.75;
 
-      // insérer chaque image
       images.forEach((img, i) => {
-        const id = wb.addImage({ buffer: img.buffer, extension: 'webp' });
+        const id = wb.addImage({ buffer: img.buffer, extension: 'jpeg' });
         ws.addImage(id, {
           tl: { col: 0, row: i },
           ext: { width: TARGET_W, height: TARGET_H }
