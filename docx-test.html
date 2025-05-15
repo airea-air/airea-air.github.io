@@ -29,50 +29,42 @@
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
   <script>
     const { Document, Packer, Paragraph, Table, TableRow, TableCell, ImageRun } = window.docx;
-    let dataURL1 = null;
-    let dataURL2 = null;
-    let ori1 = 1, ori2 = 1;
+    let filesData = [{ dataURL: null, orientation: 1 }, { dataURL: null, orientation: 1 }];
 
-    document.getElementById('btnPhoto1').onclick = () => document.getElementById('inputPhoto1').click();
-    document.getElementById('btnPhoto2').onclick = () => document.getElementById('inputPhoto2').click();
+    // Gestion des boutons et input
+    btn => btn.addEventListener && (() => {});
+    document.getElementById('btnPhoto1').onclick = () => inputPhoto1.click();
+    document.getElementById('btnPhoto2').onclick = () => inputPhoto2.click();
+    inputPhoto1.addEventListener('change', e => loadFile(e, 0));
+    inputPhoto2.addEventListener('change', e => loadFile(e, 1));
 
-    document.getElementById('inputPhoto1').addEventListener('change', e => handleFile(e, 1));
-    document.getElementById('inputPhoto2').addEventListener('change', e => handleFile(e, 2));
-
-    function handleFile(e, num) {
-      const file = e.target.files[0];
-      if (!file) return;
+    function loadFile(e, idx) {
+      const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
-      reader.onload = evt => {
-        const dataURL = evt.target.result;
+      reader.onload = ({ target }) => {
+        filesData[idx].dataURL = target.result;
         EXIF.getData(file, function() {
-          const ori = EXIF.getTag(this, 'Orientation') || 1;
-          if (num === 1) ori1 = ori; else ori2 = ori;
-          if (num === 1) {
-            dataURL1 = dataURL;
-            document.getElementById('preview1').src = dataURL1;
-          } else {
-            dataURL2 = dataURL;
-            document.getElementById('preview2').src = dataURL2;
-          }
-          document.getElementById('exportBtn').disabled = !(dataURL1 && dataURL2);
+          filesData[idx].orientation = EXIF.getTag(this, 'Orientation') || 1;
+          document.getElementById('preview' + (idx+1)).src = filesData[idx].dataURL;
+          exportBtn.disabled = !(filesData[0].dataURL && filesData[1].dataURL);
         });
       };
       reader.readAsDataURL(file);
     }
 
-    // Normalisation EXIF et conversion en ArrayBuffer
+    // Retourne { buffer, width, height } normalisé
     async function normalizeAndBuffer(dataURL, orientation) {
       return new Promise(resolve => {
         const img = new Image();
         img.onload = () => {
           let w = img.width, h = img.height;
-          // swap dims if rotated 90/270
           if (orientation >= 5 && orientation <= 8) [w, h] = [h, w];
+
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           const ctx = canvas.getContext('2d');
-          // appliquer rotation
+
+          // Appliquer rotation
           switch (orientation) {
             case 2: ctx.translate(w, 0); ctx.scale(-1,1); break;
             case 3: ctx.translate(w, h); ctx.rotate(Math.PI); break;
@@ -83,10 +75,10 @@
             case 8: ctx.rotate(1.5*Math.PI); ctx.translate(-w, 0); break;
           }
           ctx.drawImage(img, 0, 0, img.width, img.height);
-          // to Blob then to ArrayBuffer
+
           canvas.toBlob(blob => {
             const fr = new FileReader();
-            fr.onload = () => resolve(fr.result);
+            fr.onload = () => resolve({ buffer: fr.result, width: canvas.width, height: canvas.height });
             fr.readAsArrayBuffer(blob);
           }, 'image/png');
         };
@@ -94,31 +86,21 @@
       });
     }
 
-    document.getElementById('exportBtn').addEventListener('click', async () => {
+    exportBtn.addEventListener('click', async () => {
       try {
-        // Préparer buffers normalisés
-        const buf1 = await normalizeAndBuffer(dataURL1, ori1);
-        const buf2 = await normalizeAndBuffer(dataURL2, ori2);
+        // Normalisation des deux images
+        const norm1 = await normalizeAndBuffer(filesData[0].dataURL, filesData[0].orientation);
+        const norm2 = await normalizeAndBuffer(filesData[1].dataURL, filesData[1].orientation);
 
-        // créer doc et tableau
+        // Construire tableau Word
         const rows = [
-          new TableRow({ children: [
-            new TableCell({ children: [
-              new Paragraph('Photo 1'),
-              new Paragraph({ children: [ new ImageRun({ data: buf1, transformation: { width: img1Width(), height: img1Height() } }) ] })
-            ] })
-          ] }),
-          new TableRow({ children: [
-            new TableCell({ children: [
-              new Paragraph('Photo 2'),
-              new Paragraph({ children: [ new ImageRun({ data: buf2, transformation: { width: img2Width(), height: img2Height() } }) ] })
-            ] })
-          ] })
+          new TableRow({ children: [ new TableCell({ children: [ new Paragraph('Photo 1'), new Paragraph({ children: [ new ImageRun({ data: norm1.buffer, transformation: { width: norm1.width, height: norm1.height } }) ] }) ] }) ] }),
+          new TableRow({ children: [ new TableCell({ children: [ new Paragraph('Photo 2'), new Paragraph({ children: [ new ImageRun({ data: norm2.buffer, transformation: { width: norm2.width, height: norm2.height } }) ] }) ] }) ] })
         ];
         const table = new Table({ rows });
         const doc = new Document({ sections: [{ children: [table] }] });
 
-        // pack and save
+        // Exporter
         const blob = await Packer.toBlob(doc);
         saveAs(blob, 'photos.docx');
       } catch (err) {
@@ -126,12 +108,6 @@
         alert('Erreur: ' + err.message);
       }
     });
-
-    // Fonctions pour récupérer dimensions normalisées
-    function img1Width() { return document.getElementById('preview1').naturalWidth * 0.5; }
-    function img1Height() { return document.getElementById('preview1').naturalHeight * 0.5; }
-    function img2Width() { return document.getElementById('preview2').naturalWidth * 0.5; }
-    function img2Height() { return document.getElementById('preview2').naturalHeight * 0.5; }
   </script>
 </body>
 </html>
