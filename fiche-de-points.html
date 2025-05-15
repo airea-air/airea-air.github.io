@@ -12,7 +12,6 @@
       --grey: #6c757d;
       --border: #ccc;
       --radius: .5rem;
-      --padding: .75rem 1rem;
       --font: .9rem;
       --shadow: 0 2px 6px rgba(0,0,0,0.1);
       --img-w: 7cm;
@@ -23,11 +22,10 @@
       width:100vw; height:100vh;
       overflow: hidden;
       background: var(--light);
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI',sans-serif;
       display: flex; align-items: center; justify-content: center;
     }
     .app {
-      position: relative;
       width: 480px; height: 100vh;
       background: #fff; box-shadow: var(--shadow);
       display: flex; flex-direction: column;
@@ -36,8 +34,6 @@
       padding: 1rem;
       background: var(--blue); color: #fff;
       display: flex; justify-content: space-between; align-items: center;
-      border-bottom-left-radius: var(--radius);
-      border-bottom-right-radius: var(--radius);
     }
     header h1 { margin: 0; font-size: 1.4rem; font-weight: 400; }
     header p  { margin: 0; font-size: 1rem; }
@@ -45,22 +41,20 @@
       display: flex; align-items: center; font-size: var(--font);
     }
     header .affaire input {
-      width: 80px; margin-left: .5rem;
+      width: 100px; margin-left: .5rem;
       padding: .5rem; border: none; border-radius: var(--radius);
+      font-size: var(--font);
     }
     main {
       flex: 1; padding: 1rem;
-      /* no scrollbars */
+      overflow-y: auto;
     }
     .row {
       margin-bottom: 1rem;
       display: flex; flex-direction: column;
     }
     .row label { margin-bottom: .5rem; font-size: var(--font); }
-    select, input[type=text],
-    input[type=datetime-local],
-    input[type=number],
-    button {
+    select, input, button {
       padding: .6rem;
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -96,12 +90,12 @@
     .photos button.filled .btn-check { display: block; }
     .sensors {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(60px,1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(50px,1fr));
+      gap: .5rem;
     }
+    .sensors input { text-align: center; }
     footer {
-      display: flex; justify-content: space-between; padding: 0;
-      height: 3.5rem; background: #f8f9fa;
+      display: flex; height: 3.5rem;
       border-top: 1px solid var(--border);
     }
     footer button {
@@ -128,7 +122,7 @@
       </div>
       <div class="affaire">
         <label for="affaire">Affaire n° :</label>
-        <input id="affaire" placeholder="XXX">
+        <input id="affaire" value="AF25XXX">
       </div>
     </header>
 
@@ -177,15 +171,15 @@
         <div class="row sensors">
           <div>
             <label for="no2">NO₂</label>
-            <input id="no2" type="number" placeholder="µg/m³">
+            <input id="no2" type="number">
           </div>
           <div>
             <label for="c6h6">C₆H₆</label>
-            <input id="c6h6" type="number" placeholder="µg/m³">
+            <input id="c6h6" type="number">
           </div>
           <div>
             <label for="pm10">PM₁₀</label>
-            <input id="pm10" type="number" placeholder="µg/m³">
+            <input id="pm10" type="number">
           </div>
         </div>
 
@@ -266,7 +260,6 @@
         const img = new Image();
         img.src = 'data:image/jpeg;base64,' + b64raw;
         await img.decode();
-        // dimensions en px
         const pxPerCm = 96/2.54;
         const cw = Math.round(7 * pxPerCm),
               ch = Math.round(5.25 * pxPerCm);
@@ -276,15 +269,14 @@
         const c = document.createElement('canvas');
         c.width = cw; c.height = ch;
         const ctx = c.getContext('2d');
-        // draw centered, cropping edges
         ctx.drawImage(img, (cw - w)/2, (ch - h)/2, w, h);
         return c.toDataURL('image/jpeg', 0.9).split(',')[1];
       }
 
       photo1Btn.onclick = () => photo1.click();
       photo2Btn.onclick = () => photo2.click();
-      photo1.onchange = () => photo1.files[0] && transformImage(photo1.files[0], photo1Btn);
-      photo2.onchange = () => photo2.files[0] && transformImage(photo2.files[0], photo2Btn);
+      photo1.onchange = () => photo1.files[0] && transformImage(photo1.files[0], photo1Btn).then(validateForm);
+      photo2.onchange = () => photo2.files[0] && transformImage(photo2.files[0], photo2Btn).then(validateForm);
 
       btnGeo.onclick = () => {
         if (!navigator.geolocation) return alert("Géoloc non supportée");
@@ -304,12 +296,12 @@
         }, e => alert("Erreur position : " + e.message));
       };
 
-      // validation état du bouton Enregistrement
       function validateForm() {
-        const havePoint = !!pointSelect.value;
-        const haveAddr  = !!addressEl.value;
-        const havePhotos= photo1.files[0] && photo2.files[0];
-        const haveSensor= sensors.some(i=>i.value.trim()!='');
+        const havePoint  = !!pointSelect.value;
+        const haveAddr   = !!addressEl.value;
+        const havePhotos = photo1Btn.classList.contains('filled')
+                        && photo2Btn.classList.contains('filled');
+        const haveSensor = sensors.some(i => i.value.trim() !== '');
         if (havePoint && haveAddr && havePhotos && haveSensor) {
           btnSave.disabled = false;
           btnSave.classList.add('enabled');
@@ -318,7 +310,6 @@
           btnSave.classList.remove('enabled');
         }
       }
-      // écouteurs
       pointSelect.onchange = validateForm;
       sensors.forEach(i => i.oninput = validateForm);
 
@@ -341,7 +332,7 @@
           b64_2:   p2
         };
         alert(`Données ${key} enregistrées !`);
-        // reset form for next point
+        // reset form
         photo1.value = photo2.value = '';
         pointSelect.value = '';
         addressEl.value = latEl.value = lngEl.value = '';
@@ -354,7 +345,7 @@
 
       btnExport.onclick = async () => {
         if (!confirm("Tu es sûr ? Sauvegarder réinitialise l’app.")) return;
-        const affaire = affaireEl.value.trim()||'Sans_affaire';
+        const affaire = affaireEl.value.trim() || 'Sans_affaire';
         const filename = `${affaire}_Fiche_de_points_de_mesure.xlsx`;
         const wb = new ExcelJS.Workbook();
         const ws = wb.addWorksheet('Mesures');
@@ -385,18 +376,17 @@
           ws.getRow(row).height = Math.round(imgH * 0.75);
           if (p.b64_1) {
             const id1 = wb.addImage({ base64: p.b64_1, extension: 'jpeg' });
-            ws.addImage(id1, { tl: {col:4, row: row-1}, ext: {width: imgW, height: imgH} });
+            ws.addImage(id1, { tl: {col:4,row:row-1}, ext:{width:imgW,height:imgH} });
           }
           if (p.b64_2) {
             const id2 = wb.addImage({ base64: p.b64_2, extension: 'jpeg' });
-            ws.addImage(id2, { tl: {col:5, row: row-1}, ext: {width: imgW, height: imgH} });
+            ws.addImage(id2, { tl: {col:5,row:row-1}, ext:{width:imgW,height:imgH} });
           }
           row++;
         }
         const buf = await wb.xlsx.writeBuffer();
-        saveAs(new Blob([buf], {type:'application/octet-stream'}), filename);
-        // clear all points
-        Object.keys(points).forEach(k => delete points[k]);
+        saveAs(new Blob([buf],{type:'application/octet-stream'}), filename);
+        Object.keys(points).forEach(k=>delete points[k]);
       };
     });
   </script>
