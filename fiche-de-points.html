@@ -8,11 +8,8 @@
     :root {
       --airea-blue: #005fa1;
       --airea-light: #e6f2fa;
-      --airea-accent: #007bff;
       --airea-border: #ccc;
-      --footer-height: 3.5rem;
       --border-radius: .5rem;
-      --btn-padding: .75rem 1rem;
       --font-base: .9rem;
       --app-max-width: 480px;
       --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
@@ -34,16 +31,19 @@
     header {
       display:flex; justify-content:space-between; align-items:center;
       background:var(--airea-blue); color:#fff;
-      padding:1rem;
+      padding:0.4rem 1rem;
       border-bottom-left-radius:var(--border-radius);
       border-bottom-right-radius:var(--border-radius);
     }
-    .header-title h1 { margin:0; font-size:1.4rem; font-weight:400; }
-    .header-title p  { margin:0; font-size:1rem; }
-    .header-affaire input {
-      width:100%; text-align:center;
+    header h1 {
+      margin:0;
+      font-size:0.95rem;
+      font-weight:400;
+    }
+    header input {
+      width:100px; text-align:center;
       border:none; border-radius:var(--border-radius);
-      padding:.5rem; font-size:var(--font-base);
+      padding:0.4rem; font-size:0.85rem;
     }
     main {
       flex:1; padding:1rem; overflow-y:auto;
@@ -53,7 +53,9 @@
       display:flex; flex-direction:column;
     }
     .row label {
-      margin-bottom:.5rem; font-size:var(--font-base);
+      margin-bottom:.3rem;
+      font-size:var(--font-base);
+      max-width:50px;
     }
     select, input[type=text],
     input[type=datetime-local],
@@ -63,16 +65,6 @@
       border-radius:var(--border-radius);
       font-size:var(--font-base);
       box-shadow:var(--box-shadow);
-    }
-    select:focus, input:focus, button:focus {
-      outline:none;
-      border-color:var(--airea-accent);
-    }
-    p.info {
-      font-style:italic;
-      color:#555;
-      text-align:center;
-      margin-bottom:1rem;
     }
     .coords { display:flex; gap:1rem; }
     .coords>div { flex:1; display:flex; flex-direction:column; }
@@ -101,8 +93,8 @@
       grid-template-columns:repeat(auto-fit,minmax(60px,1fr));
       gap:1rem;
     }
-    footer {
-      height:var(--footer-height);
+    .footer {
+      height:3.5rem;
       display:flex; align-items:center; justify-content:space-between;
       padding:0 .5rem;
       border-top:1px solid var(--airea-border);
@@ -133,25 +125,18 @@
 <body>
   <div class="app">
     <header>
-      <div class="header-title">
-        <h1>Airea</h1>
-        <p>Fiche de point de mesure</p>
-      </div>
-      <div class="header-affaire">
-        <input id="affaire" type="text" value="AF25XX">
-      </div>
+      <h1>Airea – Fiche de points de mesure</h1>
+      <input id="affaire" value="AF25XX">
     </header>
 
     <main>
       <form id="pointForm" novalidate>
         <div class="row">
-          <label for="pointSelect">Point de mesure</label>
+          <label for="pointSelect">Point</label>
           <select id="pointSelect">
             <option value="">-- Choisir --</option>
           </select>
         </div>
-
-        <p class="info">Active ta géolocalisation avant de cliquer.</p>
 
         <div class="row">
           <button type="button" id="btnGeo">Obtenir adresse & coordonnées</button>
@@ -164,23 +149,21 @@
 
         <div class="row coords">
           <div>
-            <label for="latDMS">Latitude (DMS)</label>
+            <label for="latDMS">Lat</label>
             <input id="latDMS" readonly>
           </div>
           <div>
-            <label for="lngDMS">Longitude (DMS)</label>
+            <label for="lngDMS">Lng</label>
             <input id="lngDMS" readonly>
           </div>
         </div>
 
         <div class="row photos">
           <button type="button" id="photo1Btn">
-            <span class="btn-label">Photo 1</span>
-            <span class="btn-check">✓</span>
+            Photo 1<span class="btn-check">✓</span>
           </button>
           <button type="button" id="photo2Btn">
-            <span class="btn-label">Photo 2</span>
-            <span class="btn-check">✓</span>
+            Photo 2<span class="btn-check">✓</span>
           </button>
           <input type="file" id="photo1" accept="image/*" capture="environment" style="display:none">
           <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
@@ -203,13 +186,13 @@
 
         <div class="row">
           <label for="datetime">Date & heure</label>
-          <input id="datetime" type="datetime-local">
+          <input id="datetime" type="datetime-local" required>
         </div>
       </form>
     </main>
 
     <footer class="footer">
-      <button type="button" id="savePoint">Enregistrement</button>
+      <button type="button" id="savePoint">Enregistrer</button>
       <button type="button" id="exportXlsx">Export en .xlsx</button>
     </footer>
   </div>
@@ -222,8 +205,8 @@
     const get = id => document.getElementById(id);
     const pointSelect = get('pointSelect'),
           btnGeo      = get('btnGeo'),
-          saveBtn     = get('savePoint'),
-          exportBtn   = get('exportXlsx'),
+          btnSave     = get('savePoint'),
+          btnExport   = get('exportXlsx'),
           addressEl   = get('address'),
           latEl       = get('latDMS'),
           lngEl       = get('lngDMS'),
@@ -234,55 +217,40 @@
           photo1      = get('photo1'),
           photo2      = get('photo2'),
           photo1Btn   = get('photo1Btn'),
-          photo2Btn   = get('photo2Btn');
-    const sensors = [no2El, c6h6El, pm10El];
-    const points = {};  
+          photo2Btn   = get('photo2Btn'),
+          affaireEl   = get('affaire');
+    const points = {};
 
-    // Points dropdown
+    // Remplir dropdown
     for (let i = 1; i <= 40; i++) {
       pointSelect.add(new Option(`P${i}`, `P${i}`));
     }
 
-    // Default datetime
+    // Date/heure par défaut
     function nowLocal() {
       const d = new Date();
       d.setSeconds(0,0);
       const tz = d.getTimezoneOffset();
-      return new Date(d.getTime() - tz*60000)
-             .toISOString().slice(0,16);
+      return new Date(d.getTime() - tz*60000).toISOString().slice(0,16);
     }
     datetimeEl.value = nowLocal();
 
-    // DMS converter
+    // DMS
     const toDMS = v => {
-      const deg = Math.floor(v), min = Math.floor((v-deg)*60), sec = Math.round((v-deg-min/60)*3600);
+      const deg = Math.floor(v),
+            min = Math.floor((v - deg)*60),
+            sec = Math.round((v - deg - min/60)*3600);
       return `${deg}°${min}'${sec}"`;
     };
 
-    // Load existing
-    function loadPoint(key) {
-      clear();
-      if (points[key]) {
-        const p = points[key];
-        addressEl.value  = p.address;
-        latEl.value      = p.lat;
-        lngEl.value      = p.lng;
-        no2El.value      = p.no2;
-        c6h6El.value     = p.c6h6;
-        pm10El.value     = p.pm10;
-        datetimeEl.value = p.datetime;
-        if (p.b64_1) photo1Btn.classList.add('filled');
-        if (p.b64_2) photo2Btn.classList.add('filled');
-      }
-    }
-    pointSelect.addEventListener('change', ()=> loadPoint(pointSelect.value));
-
-    // Geo
+    // Géoloc
     btnGeo.addEventListener('click', () => {
       if (!navigator.geolocation) return alert("Géoloc non supportée");
       navigator.geolocation.getCurrentPosition(async pos => {
         const {latitude,longitude} = pos.coords;
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+        );
         const d = await res.json();
         const a = d.address||{};
         const street = `${a.house_number||''} ${a.road||''}`.trim();
@@ -293,90 +261,138 @@
       }, e => alert("Erreur position : " + e.message));
     });
 
-    // Image cover crop
+    // Recadrage portrait 5,25×7 cm avec rotation EXIF
     async function transformImageCover(file, btn) {
       return new Promise(res => {
-        const fr = new FileReader(); fr.onload = async () => {
-          const b = fr.result.split(',')[1];
-          const img = new Image(); img.src = 'data:image/jpeg;base64,'+b; await img.decode();
-          const pxPerCm=96/2.54, cw=Math.round(7*pxPerCm), ch=Math.round(5.25*pxPerCm);
-          const c=document.createElement('canvas'); c.width=cw; c.height=ch;
-          const ctx=c.getContext('2d');
-          const scale=Math.max(cw/img.width,ch/img.height);
-          const w=img.width*scale,h=img.height*scale;
-          ctx.drawImage(img,(cw-w)/2,(ch-h)/2,w,h);
-          btn.classList.add('filled');
-          res(c.toDataURL('image/jpeg',0.9).split(',')[1]);
+        const fr = new FileReader();
+        fr.onload = async () => {
+          const img = new Image();
+          img.src = fr.result;
+          await img.decode();
+
+          EXIF.getData(file, function() {
+            const orientation = EXIF.getTag(this, 'Orientation') || 1;
+            // dimensions portrait fixes
+            const pxPerCm = 96/2.54,
+                  cw = Math.round(5.25 * pxPerCm),
+                  ch = Math.round(7    * pxPerCm);
+            const c = document.createElement('canvas');
+            const ctx = c.getContext('2d');
+            c.width = cw;
+            c.height = ch;
+
+            // appliquer rotation selon EXIF
+            switch (orientation) {
+              case 6: // 90° CW
+                ctx.translate(cw, 0);
+                ctx.rotate(Math.PI/2);
+                break;
+              case 8: // 270° CW
+                ctx.translate(0, ch);
+                ctx.rotate(-Math.PI/2);
+                break;
+              case 3: // 180°
+                ctx.translate(cw, ch);
+                ctx.rotate(Math.PI);
+                break;
+            }
+
+            // ajuster échelle pour couvrir
+            let imgW = img.width, imgH = img.height;
+            if ([6,8].includes(orientation)) {
+              // swap si rotation à 90/270
+              [imgW, imgH] = [img.height, img.width];
+            }
+            const scale = Math.max(cw / imgW, ch / imgH);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const dx = (cw - dw) / 2;
+            const dy = (ch - dh) / 2;
+
+            ctx.drawImage(img, dx, dy, dw, dh);
+            btn.classList.add('filled');
+            res(c.toDataURL('image/jpeg', 0.9).split(',')[1]);
+          });
         };
         fr.readAsDataURL(file);
       });
     }
 
-    photo1Btn.addEventListener('click', ()=>photo1.click());
-    photo2Btn.addEventListener('click', ()=>photo2.click());
-    photo1.addEventListener('change', () => transformImageCover(photo1.files[0], photo1Btn));
-    photo2.addEventListener('change', () => transformImageCover(photo2.files[0], photo2Btn));
+    photo1Btn.addEventListener('click', () => photo1.click());
+    photo2Btn.addEventListener('click', () => photo2.click());
+    let lastB64_1, lastB64_2;
+    photo1.addEventListener('change', () =>
+      transformImageCover(photo1.files[0], photo1Btn).then(b64 => lastB64_1 = b64)
+    );
+    photo2.addEventListener('change', () =>
+      transformImageCover(photo2.files[0], photo2Btn).then(b64 => lastB64_2 = b64)
+    );
 
-    // Save
-    saveBtn.addEventListener('click', async () => {
-      const key = pointSelect.value;
-      const p1 = photo1.files[0] ? await transformImageCover(photo1.files[0], photo1Btn) : null;
-      const p2 = photo2.files[0] ? await transformImageCover(photo2.files[0], photo2Btn) : null;
-      points[key||`P${Object.keys(points).length+1}`] = {
+    // Enregistrement local
+    btnSave.addEventListener('click', () => {
+      const key = pointSelect.value || `P${Object.keys(points).length+1}`;
+      points[key] = {
         address: addressEl.value,
-        lat: latEl.value,
-        lng: lngEl.value,
-        no2: no2El.value,
-        c6h6: c6h6El.value,
-        pm10: pm10El.value,
-        datetime: datetimeEl.value,
-        b64_1: p1, b64_2: p2
+        lat:     latEl.value,
+        lng:     lngEl.value,
+        no2:     no2El.value,
+        c6h6:    c6h6El.value,
+        pm10:    pm10El.value,
+        datetime:datetimeEl.value,
+        b64_1:   lastB64_1,
+        b64_2:   lastB64_2
       };
-      alert(`Données ${key||''} enregistrées !`);
-      clear();
+      alert(`Données ${key} enregistrées !`);
     });
 
     // Export XLSX
-    exportBtn.addEventListener('click', async () => {
+    btnExport.addEventListener('click', async () => {
       if (!confirm("Tu es sûr ? Sauvegarder réinitialise l’app.")) return;
-      const affaire = get('affaire').value.trim()||'Sans_affaire';
+      const affaire = affaireEl.value.trim()||'Sans_affaire';
       const filename = `${affaire}_Fiche_de_points_de_mesure.xlsx`;
-      const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Mesures');
-      ws.columns=[
-        {header:'Point',key:'point',width:10},
-        {header:'Adresse',key:'address',width:30},
-        {header:'Lat DMS',key:'lat',width:15},
-        {header:'Lng DMS',key:'lng',width:15},
-        {header:'Photo 1',key:'photo1',width:35.7},
-        {header:'Photo 2',key:'photo2',width:35.7},
-        {header:'NO₂',key:'no2',width:10},
-        {header:'C₆H₆',key:'c6h6',width:10},
-        {header:'PM₁₀',key:'pm10',width:10},
-        {header:'DateHeure',key:'datetime',width:20},
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Mesures');
+      ws.columns = [
+        {header:'Point', key:'point', width:10},
+        {header:'Adresse', key:'address', width:30},
+        {header:'Lat DMS', key:'lat', width:15},
+        {header:'Lng DMS', key:'lng', width:15},
+        {header:'Photo 1', key:'photo1', width:21.4},
+        {header:'Photo 2', key:'photo2', width:21.4},
+        {header:'NO₂', key:'no2', width:10},
+        {header:'C₆H₆', key:'c6h6', width:10},
+        {header:'PM₁₀', key:'pm10', width:10},
+        {header:'DateHeure', key:'datetime', width:20},
       ];
-      ws.getColumn('datetime').numFmt='dd/mm/yy hh:mm';
-      const pxPerCm=96/2.54,imgW=Math.round(7*pxPerCm),imgH=Math.round(5.25*pxPerCm);
-      let row=2;
-      for(const [pt,p] of Object.entries(points)){
-        ws.addRow({point:pt,address:p.address,lat:p.lat,lng:p.lng,photo1:'',photo2:'',no2:p.no2,c6h6:p.c6h6,pm10:p.pm10,datetime:new Date(p.datetime)});
-        ws.getRow(row).height=Math.round(imgH*0.75);
-        if(p.b64_1)ws.addImage(wb.addImage({base64:p.b64_1,extension:'jpeg'}),{tl:{col:4,row:row-1},ext:{width:imgW,height:imgH}});
-        if(p.b64_2)ws.addImage(wb.addImage({base64:p.b64_2,extension:'jpeg'}),{tl:{col:5,row:row-1},ext:{width:imgW,height:imgH}});
+      ws.getColumn('datetime').numFmt = 'dd/mm/yy hh:mm';
+      const pxPerCm = 96/2.54,
+            imgW = Math.round(5.25 * pxPerCm),
+            imgH = Math.round(7    * pxPerCm);
+      let row = 2;
+      for (const [pt,p] of Object.entries(points)) {
+        ws.addRow({
+          point:pt, address:p.address, lat:p.lat, lng:p.lng,
+          photo1:'', photo2:'',
+          no2:p.no2, c6h6:p.c6h6, pm10:p.pm10,
+          datetime:new Date(p.datetime)
+        });
+        ws.getRow(row).height = Math.round(imgH * 0.75);
+        if (p.b64_1) {
+          const id1 = wb.addImage({ base64:p.b64_1, extension:'jpeg' });
+          ws.addImage(id1, { tl:{col:4,row:row-1}, ext:{width:imgW, height:imgH} });
+        }
+        if (p.b64_2) {
+          const id2 = wb.addImage({ base64:p.b64_2, extension:'jpeg' });
+          ws.addImage(id2, { tl:{col:5,row:row-1}, ext:{width:imgW, height:imgH} });
+        }
         row++;
       }
-      const buf=await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buf],{type:'application/octet-stream'}),filename);
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf],{type:'application/octet-stream'}), filename);
+      // réinitialise
       Object.keys(points).forEach(k=>delete points[k]);
-      clear();
-      pointSelect.value='';
+      location.reload();
     });
-
-    function clear(){
-      addressEl.value=latEl.value=lngEl.value='';
-      sensors.forEach(e=>e.value='');
-      datetimeEl.value=nowLocal();
-      photo1Btn.classList.remove('filled');photo2Btn.classList.remove('filled');
-    }
   });
   </script>
 </body>
