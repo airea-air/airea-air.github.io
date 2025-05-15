@@ -23,16 +23,19 @@
 
   <button id="exportBtn" disabled>Exporter DOCX</button>
 
-  <!-- Librairies docx et FileSaver -->
+  <!-- Librairies docx, FileSaver et exif-js -->
+  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.2.0/build/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
   <script>
     const { Document, Packer, Paragraph, Table, TableRow, TableCell, ImageRun } = window.docx;
     let dataURL1 = null;
     let dataURL2 = null;
+    let ori1 = 1, ori2 = 1;
 
     document.getElementById('btnPhoto1').onclick = () => document.getElementById('inputPhoto1').click();
     document.getElementById('btnPhoto2').onclick = () => document.getElementById('inputPhoto2').click();
+
     document.getElementById('inputPhoto1').addEventListener('change', e => handleFile(e, 1));
     document.getElementById('inputPhoto2').addEventListener('change', e => handleFile(e, 2));
 
@@ -42,58 +45,93 @@
       const reader = new FileReader();
       reader.onload = evt => {
         const dataURL = evt.target.result;
-        if (num === 1) {
-          dataURL1 = dataURL;
-          document.getElementById('preview1').src = dataURL1;
-        } else {
-          dataURL2 = dataURL;
-          document.getElementById('preview2').src = dataURL2;
-        }
-        document.getElementById('exportBtn').disabled = !(dataURL1 && dataURL2);
+        EXIF.getData(file, function() {
+          const ori = EXIF.getTag(this, 'Orientation') || 1;
+          if (num === 1) ori1 = ori; else ori2 = ori;
+          if (num === 1) {
+            dataURL1 = dataURL;
+            document.getElementById('preview1').src = dataURL1;
+          } else {
+            dataURL2 = dataURL;
+            document.getElementById('preview2').src = dataURL2;
+          }
+          document.getElementById('exportBtn').disabled = !(dataURL1 && dataURL2);
+        });
       };
       reader.readAsDataURL(file);
     }
 
+    // Normalisation EXIF et conversion en ArrayBuffer
+    async function normalizeAndBuffer(dataURL, orientation) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          // swap dims if rotated 90/270
+          if (orientation >= 5 && orientation <= 8) [w, h] = [h, w];
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          // appliquer rotation
+          switch (orientation) {
+            case 2: ctx.translate(w, 0); ctx.scale(-1,1); break;
+            case 3: ctx.translate(w, h); ctx.rotate(Math.PI); break;
+            case 4: ctx.translate(0, h); ctx.scale(1,-1); break;
+            case 5: ctx.rotate(0.5*Math.PI); ctx.scale(1,-1); break;
+            case 6: ctx.rotate(0.5*Math.PI); ctx.translate(0, -h); break;
+            case 7: ctx.rotate(1.5*Math.PI); ctx.scale(1,-1); break;
+            case 8: ctx.rotate(1.5*Math.PI); ctx.translate(-w, 0); break;
+          }
+          ctx.drawImage(img, 0, 0, img.width, img.height);
+          // to Blob then to ArrayBuffer
+          canvas.toBlob(blob => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result);
+            fr.readAsArrayBuffer(blob);
+          }, 'image/png');
+        };
+        img.src = dataURL;
+      });
+    }
+
     document.getElementById('exportBtn').addEventListener('click', async () => {
       try {
-        // Créer document Word
-        const doc = new Document({ sections: [{ children: [] }] });
+        // Préparer buffers normalisés
+        const buf1 = await normalizeAndBuffer(dataURL1, ori1);
+        const buf2 = await normalizeAndBuffer(dataURL2, ori2);
 
-        // Préparer le buffer des images
-        async function fetchBuffer(dataURL) {
-          const res = await fetch(dataURL);
-          return res.arrayBuffer();
-        }
-        const buffer1 = await fetchBuffer(dataURL1);
-        const buffer2 = await fetchBuffer(dataURL2);
-
-        // Construire le tableau avec les images dans des Paragraphs
-        const table = new Table({ rows: [
+        // créer doc et tableau
+        const rows = [
           new TableRow({ children: [
             new TableCell({ children: [
               new Paragraph('Photo 1'),
-              new Paragraph({ children: [ new ImageRun({ data: buffer1, transformation: { width: 200, height: 300 } }) ] })
+              new Paragraph({ children: [ new ImageRun({ data: buf1, transformation: { width: img1Width(), height: img1Height() } }) ] })
             ] })
           ] }),
           new TableRow({ children: [
             new TableCell({ children: [
               new Paragraph('Photo 2'),
-              new Paragraph({ children: [ new ImageRun({ data: buffer2, transformation: { width: 200, height: 300 } }) ] })
+              new Paragraph({ children: [ new ImageRun({ data: buf2, transformation: { width: img2Width(), height: img2Height() } }) ] })
             ] })
           ] })
-        ] });
+        ];
+        const table = new Table({ rows });
+        const doc = new Document({ sections: [{ children: [table] }] });
 
-        // Ajouter le tableau dans une section
-        doc.addSection({ children: [table] });
-
-        // Générer et télécharger
+        // pack and save
         const blob = await Packer.toBlob(doc);
         saveAs(blob, 'photos.docx');
       } catch (err) {
         console.error(err);
-        alert('Erreur lors de la génération du document : ' + err.message);
+        alert('Erreur: ' + err.message);
       }
     });
+
+    // Fonctions pour récupérer dimensions normalisées
+    function img1Width() { return document.getElementById('preview1').naturalWidth * 0.5; }
+    function img1Height() { return document.getElementById('preview1').naturalHeight * 0.5; }
+    function img2Width() { return document.getElementById('preview2').naturalWidth * 0.5; }
+    function img2Height() { return document.getElementById('preview2').naturalHeight * 0.5; }
   </script>
 </body>
 </html>
