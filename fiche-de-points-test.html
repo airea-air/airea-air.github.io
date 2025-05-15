@@ -42,25 +42,15 @@
     main {
       flex:1; padding:1rem; overflow-y:auto;
     }
-    /* zone erreurs */
-    #errors {
-      color: var(--error-red);
-      margin-bottom:1rem;
-    }
-    #errors ul {
-      padding-left:1.2rem;
-      margin:0;
-    }
+    #errors { color:var(--error-red); margin-bottom:1rem; }
+    #errors ul { padding-left:1.2rem; margin:0; }
 
     label {
       display:block; margin-bottom:.3rem;
       font-size:var(--font-base); font-weight:500; color:#333;
     }
-    select,
-    input[type=text],
-    input[type=datetime-local],
-    input[type=number],
-    button {
+    select, input[type=text], input[type=datetime-local],
+    input[type=number], button {
       width:100%; padding:.6rem;
       border:1px solid var(--airea-border);
       border-radius:var(--border-radius);
@@ -70,55 +60,40 @@
     }
     .row { margin-bottom:1rem; }
 
-    /* Adresse full width */
-    #address { }
-
-    /* grid Coordonnées Lat/Lng 50/50 */
+    /* coordonnées 50/50 */
     .coords {
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:1rem;
+      display:grid; grid-template-columns:1fr 1fr; gap:1rem;
       margin-bottom:1rem;
     }
-
-    /* grid Photos */
+    /* photos 2-col */
     .photos {
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:1rem;
+      display:grid; grid-template-columns:repeat(2,1fr); gap:1rem;
       margin-bottom:1rem;
     }
     .photos button {
-      position:relative;
-      display:flex; align-items:center; justify-content:center;
+      position:relative; display:flex; align-items:center; justify-content:center;
       background:#fff; transition:.2s;
     }
-    .photos button .btn-check {
+    .photos .btn-check {
       position:absolute; top:.4rem; right:.4rem;
       font-size:1.2rem; color:limegreen; display:none;
     }
-    .photos button.filled {
-      background:var(--airea-blue); color:#fff; border-color:var(--airea-blue);
-    }
+    .photos button.filled { background:var(--airea-blue); color:#fff; border-color:var(--airea-blue); }
     .photos button.filled .btn-check { display:block; }
 
-    /* grid Capteurs full width */
+    /* capteurs 3-col pleine largeur */
     .sensors {
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:1rem;
+      display:grid; grid-template-columns:repeat(3,1fr); gap:1rem;
       margin-bottom:1rem;
     }
     .sensors div { display:flex; flex-direction:column; }
 
     .footer {
-      height:3.5rem; display:flex;
-      align-items:center; justify-content:space-between;
+      height:3.5rem; display:flex; align-items:center; justify-content:space-between;
       padding:0 .5rem; background:#f9f9f9; border-top:1px solid var(--airea-border);
     }
     .footer button {
-      flex:1; margin:0 .25rem;
-      border:none; cursor:pointer;
+      flex:1; margin:0 .25rem; border:none; cursor:pointer;
       border-radius:var(--border-radius);
       padding:.6rem; font-size:.95rem;
       box-shadow:var(--box-shadow);
@@ -133,10 +108,9 @@
       <h1>Airea – Fiche de points de mesure</h1>
       <input id="affaire" value="AF25XX">
     </header>
-    <main>
-      <!-- zone d'affichage des erreurs -->
-      <div id="errors"></div>
 
+    <main>
+      <div id="errors"></div>
       <form id="pointForm" novalidate>
         <div class="row">
           <label for="pointSelect">Point de mesure</label>
@@ -144,16 +118,13 @@
             <option value="">-- Choisir --</option>
           </select>
         </div>
-
         <div class="row">
           <button type="button" id="btnGeo">Obtenir adresse & coordonnées</button>
         </div>
-
         <div class="row">
           <label for="address">Adresse</label>
           <input id="address" type="text" readonly>
         </div>
-
         <div class="coords">
           <div>
             <label for="latDMS">Latitude</label>
@@ -164,33 +135,17 @@
             <input id="lngDMS" type="text" readonly>
           </div>
         </div>
-
         <div class="photos">
-          <button type="button" id="photo1Btn">
-            Photo 1<span class="btn-check">✓</span>
-          </button>
-          <button type="button" id="photo2Btn">
-            Photo 2<span class="btn-check">✓</span>
-          </button>
+          <button type="button" id="photo1Btn">Photo 1<span class="btn-check">✓</span></button>
+          <button type="button" id="photo2Btn">Photo 2<span class="btn-check">✓</span></button>
           <input type="file" id="photo1" accept="image/*" capture="environment" style="display:none">
           <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
         </div>
-
         <div class="sensors">
-          <div>
-            <label for="no2">NO₂</label>
-            <input id="no2" type="number">
-          </div>
-          <div>
-            <label for="c6h6">C₆H₆</label>
-            <input id="c6h6" type="number">
-          </div>
-          <div>
-            <label for="pm10">PM₁₀</label>
-            <input id="pm10" type="number">
-          </div>
+          <div><label for="no2">NO₂</label><input id="no2" type="number"></div>
+          <div><label for="c6h6">C₆H₆</label><input id="c6h6" type="number"></div>
+          <div><label for="pm10">PM₁₀</label><input id="pm10" type="number"></div>
         </div>
-
         <div class="row">
           <label for="datetime">Date & heure</label>
           <input id="datetime" type="datetime-local" required>
@@ -209,7 +164,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const get = id => document.getElementById(id);
+    const get = id=>document.getElementById(id);
     const pointSelect = get('pointSelect'),
           btnGeo      = get('btnGeo'),
           btnSave     = get('savePoint'),
@@ -228,66 +183,97 @@
           errorsDiv   = get('errors'),
           affaireEl   = get('affaire');
     const points = {};
-    let lastB64_1 = null, lastB64_2 = null;
+    let lastB64_1=null, lastB64_2=null, lastSatB64=null;
 
-    // Remplir dropdown
-    for (let i = 1; i <= 40; i++) {
-      pointSelect.add(new Option(`P${i}`, `P${i}`));
-    }
-
-    // Met à jour label du bouton Enregistrer
-    pointSelect.addEventListener('change', () => {
-      const pt = pointSelect.value;
-      btnSave.textContent = pt ? `Enregistrer ${pt}` : 'Enregistrer';
+    // remplir dropdown
+    for(let i=1;i<=40;i++) pointSelect.add(new Option(`P${i}`,`P${i}`));
+    pointSelect.addEventListener('change', ()=> {
+      const pt=pointSelect.value;
+      btnSave.textContent = pt?`Enregistrer ${pt}`:'Enregistrer';
     });
 
-    // Date/heure par défaut
-    function nowLocal() {
-      const d = new Date(); d.setSeconds(0,0);
-      const tz = d.getTimezoneOffset();
-      return new Date(d.getTime() - tz*60000).toISOString().slice(0,16);
+    // date/heure par défaut
+    function nowLocal(){
+      const d=new Date();d.setSeconds(0,0);
+      const tz=d.getTimezoneOffset();
+      return new Date(d.getTime()-tz*60000).toISOString().slice(0,16);
     }
     datetimeEl.value = nowLocal();
 
-    // toDMS utilitaire
-    const toDMS = v => {
-      const deg = Math.floor(v),
-            min = Math.floor((v - deg)*60),
-            sec = Math.round((v - deg - min/60)*3600);
+    // util toDMS
+    const toDMS = v=>{
+      const deg=Math.floor(v),
+            min=Math.floor((v-deg)*60),
+            sec=Math.round((v-deg-min/60)*3600);
       return `${deg}°${min}'${sec}"`;
     };
 
-    // Géoloc
-    btnGeo.addEventListener('click', () => {
-      if (!navigator.geolocation) return showErrors(['Géolocalisation non supportée']);
-      navigator.geolocation.getCurrentPosition(async pos => {
+    // affichage erreurs
+    function showErrors(arr){
+      errorsDiv.innerHTML = `<ul>${arr.map(e=>`<li>${e}</li>`).join('')}</ul>`;
+    }
+    function clearErrors(){ errorsDiv.innerHTML=''; }
+
+    // géoloc + adresse + DMS + capture satellite
+    btnGeo.addEventListener('click', ()=>{
+      clearErrors();
+      if(!navigator.geolocation){
+        return showErrors(['Géolocalisation non supportée']);
+      }
+      navigator.geolocation.getCurrentPosition(async pos=>{
         const {latitude,longitude} = pos.coords;
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-        const d = await res.json(), a = d.address||{};
-        addressEl.value = `${a.house_number||''} ${a.road||''}`.trim() + ', ' + (a.city||a.town||a.village||a.county||'');
+        // adresse via Nominatim
+        const res=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const d=await res.json(), a=d.address||{};
+        addressEl.value = `${a.house_number||''} ${a.road||''}`.trim()+', '+(a.city||a.town||a.village||a.county||'');
         latEl.value = toDMS(latitude);
         lngEl.value = toDMS(longitude);
-      }, e => showErrors([`Erreur position : ${e.message}`]));
+        // capture satellite Google Static Maps
+        lastSatB64 = await fetchSat(latitude, longitude);
+      }, e=> showErrors([`Erreur position : ${e.message}`]));
     });
 
-    // Transform image + EXIF
-    async function transformImageCover(file, btn) {
-      return new Promise(res => {
-        const fr = new FileReader();
-        fr.onload = async () => {
-          const img = new Image(); img.src = fr.result; await img.decode();
-          EXIF.getData(file, function() {
+    // fetch satellite static map portrait 7x5.25 cm
+    async function fetchSat(lat, lon){
+      // dimensions px pour 7cm x 5.25cm à 96dpi
+      const w = Math.round(5.25*96/2.54), h = Math.round(7*96/2.54);
+      // zoom approximé pour ~500m vue de rayon
+      const zoom = 16;
+      const url = `https://maps.googleapis.com/maps/api/staticmap`
+        + `?center=${lat},${lon}`
+        + `&zoom=${zoom}`
+        + `&size=${w}x${h}`
+        + `&maptype=satellite`
+        + `&key=YOUR_API_KEY`;
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.src = url;
+      await img.decode();
+      // dessiner dans canvas portrait
+      const c=document.createElement('canvas');
+      c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      return c.toDataURL('image/png').split(',')[1];
+    }
+
+    // recadrage photo + EXIF (inchangé)
+    async function transformImageCover(file, btn){
+      return new Promise(res=>{
+        const fr=new FileReader();
+        fr.onload = async ()=>{
+          const img=new Image(); img.src=fr.result; await img.decode();
+          EXIF.getData(file, function(){
             const orient = EXIF.getTag(this,'Orientation')||1;
-            const pxPerCm = 96/2.54, cw=Math.round(5.25*pxPerCm), ch=Math.round(7*pxPerCm);
-            const c = document.createElement('canvas'), ctx=c.getContext('2d');
+            const pxPerCm=96/2.54, cw=Math.round(5.25*pxPerCm), ch=Math.round(7*pxPerCm);
+            const c=document.createElement('canvas'), ctx=c.getContext('2d');
             c.width=cw; c.height=ch;
-            if (orient===6){ctx.translate(cw,0);ctx.rotate(Math.PI/2);}
-            if (orient===8){ctx.translate(0,ch);ctx.rotate(-Math.PI/2);}
-            if (orient===3){ctx.translate(cw,ch);ctx.rotate(Math.PI);}
+            if(orient===6){ctx.translate(cw,0);ctx.rotate(Math.PI/2);}
+            if(orient===8){ctx.translate(0,ch);ctx.rotate(-Math.PI/2);}
+            if(orient===3){ctx.translate(cw,ch);ctx.rotate(Math.PI);}
             let [w,h]=[img.width,img.height];
-            if ([6,8].includes(orient)) [w,h]=[h,w];
-            const scale=Math.max(cw/w,ch/h), dw=img.width*scale, dh=img.height*scale;
-            const dx=(cw-dw)/2, dy=(ch-dh)/2;
+            if([6,8].includes(orient)) [w,h]=[h,w];
+            const scale=Math.max(cw/w,ch/h), dw=img.width*scale, dh=img.height*scale,
+                  dx=(cw-dw)/2, dy=(ch-dh)/2;
             ctx.drawImage(img,dx,dy,dw,dh);
             btn.classList.add('filled');
             res(c.toDataURL('image/jpeg',0.9).split(',')[1]);
@@ -296,62 +282,56 @@
         fr.readAsDataURL(file);
       });
     }
-    photo1Btn.addEventListener('click', () => photo1.click());
-    photo2Btn.addEventListener('click', () => photo2.click());
-    photo1.addEventListener('change', () =>
-      transformImageCover(photo1.files[0], photo1Btn).then(b64 => lastB64_1 = b64)
-    );
-    photo2.addEventListener('change', () =>
-      transformImageCover(photo2.files[0], photo2Btn).then(b64 => lastB64_2 = b64)
-    );
+    photo1Btn.addEventListener('click',()=>photo1.click());
+    photo2Btn.addEventListener('click',()=>photo2.click());
+    photo1.addEventListener('change',()=>transformImageCover(photo1.files[0],photo1Btn).then(b=>lastB64_1=b));
+    photo2.addEventListener('change',()=>transformImageCover(photo2.files[0],photo2Btn).then(b=>lastB64_2=b));
 
-    // Affiche un tableau d’erreurs
-    function showErrors(arr) {
-      errorsDiv.innerHTML = `<ul>${arr.map(e=>`<li>${e}</li>`).join('')}</ul>`;
-    }
-    function clearErrors() { errorsDiv.innerHTML = ''; }
-
-    // Enregistrement local
-    btnSave.addEventListener('click', () => {
+    // enregistrement + validation
+    btnSave.addEventListener('click', async ()=>{
       clearErrors();
       const errs = [];
       const pt = pointSelect.value;
-      if (!pt) errs.push('Veuillez sélectionner un point.');
-      if (!datetimeEl.value) errs.push('Date & heure obligatoires.');
-      if (!no2El.value && !c6h6El.value && !pm10El.value)
-        errs.push('Au moins une valeur de capteur requise.');
-      if (!lastB64_1 || !lastB64_2)
-        errs.push('Deux photos obligatoires.');
-
-      if (errs.length) {
-        showErrors(errs);
-        return;
+      if(!pt) errs.push('Sélectionner un point.');
+      if(!datetimeEl.value) errs.push('Date & heure requises.');
+      if(!no2El.value && !c6h6El.value && !pm10El.value)
+        errs.push('Au moins une mesure de capteur.');
+      if(!lastB64_1 || !lastB64_2) errs.push('Les deux photos sont obligatoires.');
+      if(!lastSatB64) errs.push('Vue satellite manquante (cliquez sur « Obtenir adresse »).');
+      if(errs.length){
+        return showErrors(errs);
       }
-
-      // stockage
+      // stocker
       points[pt] = {
-        address: addressEl.value, lat:latEl.value, lng:lngEl.value,
-        no2:no2El.value, c6h6:c6h6El.value, pm10:pm10El.value,
-        datetime:datetimeEl.value, b64_1:lastB64_1, b64_2:lastB64_2
+        address: addressEl.value,
+        lat: latEl.value,
+        lng: lngEl.value,
+        no2: no2El.value,
+        c6h6: c6h6El.value,
+        pm10: pm10El.value,
+        datetime: datetimeEl.value,
+        b64_1: lastB64_1,
+        b64_2: lastB64_2,
+        sat: lastSatB64
       };
-
       // reset UI
       addressEl.value = latEl.value = lngEl.value = '';
       no2El.value = c6h6El.value = pm10El.value = '';
       datetimeEl.value = nowLocal();
       photo1Btn.classList.remove('filled');
       photo2Btn.classList.remove('filled');
-      lastB64_1 = lastB64_2 = null;
+      lastB64_1 = lastB64_2 = lastSatB64 = null;
       pointSelect.value = '';
       btnSave.textContent = 'Enregistrer';
       clearErrors();
       alert(`Données ${pt} enregistrées !`);
     });
 
-    // Export XLSX (inchangé)
-    btnExport.addEventListener('click', async () => {
-      if (!confirm("Tu es sûr ? Sauvegarder réinitialise l’app.")) return;
-      const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Mesures');
+    // export XLSX avec la colonne Satellite
+    btnExport.addEventListener('click', async ()=>{
+      if(!confirm('Tu es sûr ? Sauvegarder réinitialise l’app.')) return;
+      const wb = new ExcelJS.Workbook(),
+            ws = wb.addWorksheet('Mesures');
       ws.columns = [
         {header:'Point', key:'point', width:10},
         {header:'Adresse', key:'address', width:30},
@@ -363,30 +343,42 @@
         {header:'C₆H₆', key:'c6h6', width:10},
         {header:'PM₁₀', key:'pm10', width:10},
         {header:'DateHeure', key:'datetime', width:20},
+        {header:'Vue sat.', key:'sat', width:21.4}
       ];
       ws.getColumn('datetime').numFmt = 'dd/mm/yy hh:mm';
-      const pxPerCm = 96/2.54, imgW=Math.round(5.25*pxPerCm), imgH=Math.round(7*pxPerCm);
+      const pxPerCm=96/2.54,
+            imgW = Math.round(5.25*pxPerCm),
+            imgH = Math.round(7*pxPerCm);
       let row = 2;
-      for (const [pt,p] of Object.entries(points)) {
+      for(const [pt,p] of Object.entries(points)){
         ws.addRow({
           point:pt, address:p.address, lat:p.lat, lng:p.lng,
           photo1:'', photo2:'',
           no2:p.no2, c6h6:p.c6h6, pm10:p.pm10,
-          datetime:new Date(p.datetime)
+          datetime:new Date(p.datetime),
+          sat:''
         });
-        ws.getRow(row).height = Math.round(imgH * 0.75);
-        if (p.b64_1) {
-          const id1 = wb.addImage({ base64:p.b64_1, extension:'jpeg' });
-          ws.addImage(id1, { tl:{col:4,row:row-1}, ext:{width:imgW,height:imgH} });
+        ws.getRow(row).height = Math.round(imgH*0.75);
+        // photos
+        if(p.b64_1){
+          const id1 = wb.addImage({base64:p.b64_1,extension:'jpeg'});
+          ws.addImage(id1,{tl:{col:4,row:row-1},ext:{width:imgW,height:imgH}});
         }
-        if (p.b64_2) {
-          const id2 = wb.addImage({ base64:p.b64_2, extension:'jpeg' });
-          ws.addImage(id2, { tl:{col:5,row:row-1}, ext:{width:imgW,height:imgH} });
+        if(p.b64_2){
+          const id2 = wb.addImage({base64:p.b64_2,extension:'jpeg'});
+          ws.addImage(id2,{tl:{col:5,row:row-1},ext:{width:imgW,height:imgH}});
+        }
+        // satellite
+        if(p.sat){
+          const id3 = wb.addImage({base64:p.sat,extension:'png'});
+          ws.addImage(id3,{tl:{col:11,row:row-1},ext:{width:imgW,height:imgH}});
         }
         row++;
       }
       const buf = await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buf],{type:'application/octet-stream'}), `${affaireEl.value||'Sans_affaire'}_Fiche_de_points_de_mesure.xlsx`);
+      saveAs(new Blob([buf],{type:'application/octet-stream'}),
+             `${affaireEl.value||'Sans_affaire'}_Fiche_de_points_de_mesure.xlsx`);
+      // remise à zéro
       Object.keys(points).forEach(k=>delete points[k]);
       location.reload();
     });
