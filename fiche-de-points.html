@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
   <title>Airea – Fiche de points de mesure</title>
   <style>
     :root {
@@ -14,25 +14,30 @@
       --radius: .5rem;
       --font: .9rem;
       --shadow: 0 2px 6px rgba(0,0,0,0.1);
-      --img-w: 7cm;
-      --img-h: 5.25cm;
+      --img-w-cm: 7;
+      --img-h-cm: 5.25;
     }
     html, body {
       margin: 0; padding: 0;
-      width:100vw; height:100vh;
-      overflow: hidden;
+      width:100%; height:100%;
+      overflow-x: hidden;
+      overflow-y: auto;
       background: var(--light);
       font-family: 'Segoe UI',sans-serif;
       display: flex; align-items: center; justify-content: center;
     }
     .app {
-      width: 480px; height: 100vh;
-      background: #fff; box-shadow: var(--shadow);
+      width: 480px;
+      max-width: 100%;
+      min-height: 100vh;
+      background: #fff;
+      box-shadow: var(--shadow);
       display: flex; flex-direction: column;
     }
     header {
       padding: 1rem;
-      background: var(--blue); color: #fff;
+      background: var(--blue);
+      color: #fff;
       display: flex; justify-content: space-between; align-items: center;
     }
     header h1 { margin: 0; font-size: 1.4rem; font-weight: 400; }
@@ -69,33 +74,51 @@
       text-align: center; font-style: italic; color: #555;
       margin-bottom: 1rem;
     }
-    .coords { display: flex; gap: 1rem; }
-    .coords > div { flex: 1; }
-    .photos {
+    .coords {
       display: flex; gap: 1rem;
     }
+    .coords > div {
+      flex: 1; display: flex; flex-direction: column;
+    }
+    .photos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
     .photos button {
-      flex: 1; position: relative;
+      position: relative;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       transition: background .2s, border-color .2s;
+      height: 3rem;
     }
     .photos button.filled {
-      background: var(--blue); color: #fff; border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
     }
     .photos .btn-check {
       position: absolute; top: .4rem; right: .4rem;
-      display: none; font-size: 1.2rem; color: limegreen;
+      font-size: 1.2rem; color: limegreen;
     }
-    .photos button.filled .btn-check { display: block; }
     .sensors {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(50px,1fr));
+      grid-template-columns: repeat(3, 50px);
+      justify-content: space-between;
       gap: .5rem;
     }
-    .sensors input { text-align: center; }
+    .sensors input {
+      text-align: center;
+      padding: .4rem;
+    }
+    .sensors label {
+      font-size: .8rem;
+      text-align: center;
+      margin-bottom: .25rem;
+    }
     footer {
-      display: flex; height: 3.5rem;
+      display: flex;
+      height: 3.5rem;
       border-top: 1px solid var(--border);
     }
     footer button {
@@ -103,13 +126,15 @@
       cursor: pointer; transition: background .2s;
     }
     #savePoint {
-      background: var(--grey); color: #fff;
+      background: var(--grey);
+      color: #fff;
     }
     #savePoint.enabled {
       background: var(--accent);
     }
     #exportXlsx {
-      background: var(--blue); color: #fff;
+      background: var(--blue);
+      color: #fff;
     }
   </style>
 </head>
@@ -158,12 +183,8 @@
         </div>
 
         <div class="row photos">
-          <button type="button" id="photo1Btn">
-            Photo 1 <span class="btn-check">✓</span>
-          </button>
-          <button type="button" id="photo2Btn">
-            Photo 2 <span class="btn-check">✓</span>
-          </button>
+          <button type="button" id="photo1Btn">Photo 1 <span class="btn-check">✓</span></button>
+          <button type="button" id="photo2Btn">Photo 2 <span class="btn-check">✓</span></button>
           <input type="file" id="photo1" accept="image/*" capture="environment" style="display:none">
           <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
         </div>
@@ -247,22 +268,21 @@
           const fr = new FileReader();
           fr.onload = () => {
             btn.classList.add('filled');
-            btn.title = file.name;
             res(fr.result.split(',')[1]);
           };
           fr.readAsDataURL(file);
         });
       }
 
-      // crop-cover transformation (no rotation)
+      // crop-cover transformation
       async function transformImage(file, btn) {
         const b64raw = await rawImage(file, btn);
         const img = new Image();
         img.src = 'data:image/jpeg;base64,' + b64raw;
         await img.decode();
         const pxPerCm = 96/2.54;
-        const cw = Math.round(7 * pxPerCm),
-              ch = Math.round(5.25 * pxPerCm);
+        const cw = Math.round(var(--img-w-cm) * pxPerCm),
+              ch = Math.round(var(--img-h-cm) * pxPerCm);
         const scale = Math.max(cw/img.width, ch/img.height);
         const w = img.width * scale,
               h = img.height * scale;
@@ -326,8 +346,6 @@
           c6h6:    c6h6El.value,
           pm10:    pm10El.value,
           datetime:datetimeEl.value,
-          photo1Name: photo1.files[0].name,
-          photo2Name: photo2.files[0].name,
           b64_1:   p1,
           b64_2:   p2
         };
