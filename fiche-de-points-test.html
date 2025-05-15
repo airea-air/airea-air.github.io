@@ -2,285 +2,394 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Airea | Jury de nez</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-
-  <!-- Font-Awesome 6 Free -->
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        integrity="sha512-p+6FUKn8zlF4OFklJ0ncP1BohUNRH/Rdzh1s5aZ/L9ZZSPgk/Vxmjc+XhHzs+o3rRjRA3SWcCiUz6P2e7Z8U9Q=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>Airea – Fiche de points de mesure</title>
   <style>
-    body { font-family: sans-serif; margin: 0; padding-bottom: 60px; }
+    :root {
+      --airea-blue: #005fa1;
+      --airea-light: #e6f2fa;
+      --airea-border: #ccc;
+      --border-radius: .5rem;
+      --font-base: .9rem;
+      --app-max-width: 480px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      --green: #28a745;
+      --error-red: #d9534f;
+    }
+    html, body {
+      margin:0; padding:0;
+      width:100%; height:100%;
+      font-family:'Segoe UI',sans-serif;
+      background:var(--airea-light);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .app {
+      width:100%; max-width:var(--app-max-width);
+      height:100%; display:flex; flex-direction:column;
+      background:#fff; box-shadow:var(--box-shadow);
+    }
     header {
-      background: #3f51b5;
-      color: white;
-      padding: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display:flex; justify-content:space-between; align-items:center;
+      background:var(--airea-blue); color:#fff;
+      padding:.4rem 1rem;
     }
-    header h1 { margin: 0; font-size: 1.2rem; }
-    main { padding: 0.5rem 1rem; }
-
-    .grid2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
+    header h1 { margin:0; font-size:.95rem; font-weight:400; }
+    header input {
+      width:100px; text-align:center;
+      border:none; border-radius:var(--border-radius);
+      padding:.4rem; font-size:.85rem;
     }
-    label { display: block; font-size: .85rem; }
-
-    select,
-    input[type="time"],
-    input[type="number"],
-    input[type="text"],
-    textarea,
-    button,
-    input[type="file"] {
-      width: 100%;
-      padding: .4rem;
-      font-size: .85rem;
-      margin-top: .2rem;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 2px;
-      background: white;
-      color: #333;
+    main {
+      flex:1; padding:1rem; overflow-y:auto;
     }
-
-    #new {
-      background: #f0f0f0;
-      cursor: pointer;
-    }
-    button i {
-      font-family: "Font Awesome 6 Free";
-      font-weight: 900;
-      margin-left: .4rem;
-    }
-
-    textarea { height: 3rem; }
-
-    /* container d’erreurs */
+    /* zone erreurs */
     #errors {
-      margin-bottom: .5rem;
-      color: #b00020;
-      font-size: .9rem;
+      color: var(--error-red);
+      margin-bottom:1rem;
     }
     #errors ul {
-      padding-left: 1.2rem;
-      margin: 0;
+      padding-left:1.2rem;
+      margin:0;
     }
 
-    footer {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: #3f51b5;
-      padding: .3rem 1rem;
-      display: flex; gap: .3rem;
+    label {
+      display:block; margin-bottom:.3rem;
+      font-size:var(--font-base); font-weight:500; color:#333;
     }
-    footer button {
-      flex: 1;
-      padding: .6rem;
-      font-size: .9rem;
-      border: none;
-      border-radius: 4px;
-      color: white;
-      cursor: pointer;
+    select,
+    input[type=text],
+    input[type=datetime-local],
+    input[type=number],
+    button {
+      width:100%; padding:.6rem;
+      border:1px solid var(--airea-border);
+      border-radius:var(--border-radius);
+      font-size:var(--font-base);
+      box-shadow:var(--box-shadow);
+      box-sizing:border-box;
     }
-    #add      { background: #757575; }
-    #download { background: #e53935; }
+    .row { margin-bottom:1rem; }
 
-    #notes .note-row {
-      display: flex; align-items: center; padding: .3rem;
-      gap: .3rem; border-radius: 4px; margin-bottom: .2rem;
-      flex-wrap: wrap;
+    /* Adresse full width */
+    #address { }
+
+    /* grid Coordonnées Lat/Lng 50/50 */
+    .coords {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:1rem;
+      margin-bottom:1rem;
     }
-    #notes .note-row > div.title { flex-basis: 100%; }
-    #notes .note-row > div.title strong { font-size: .9rem; }
-    #notes .note-row label { margin: 0; flex: 1; font-size: .8rem; }
-    #notes .note-row select { flex: 0 0 50px; padding: .2rem; font-size: .8rem; }
+
+    /* grid Photos */
+    .photos {
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:1rem;
+      margin-bottom:1rem;
+    }
+    .photos button {
+      position:relative;
+      display:flex; align-items:center; justify-content:center;
+      background:#fff; transition:.2s;
+    }
+    .photos button .btn-check {
+      position:absolute; top:.4rem; right:.4rem;
+      font-size:1.2rem; color:limegreen; display:none;
+    }
+    .photos button.filled {
+      background:var(--airea-blue); color:#fff; border-color:var(--airea-blue);
+    }
+    .photos button.filled .btn-check { display:block; }
+
+    /* grid Capteurs full width */
+    .sensors {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:1rem;
+      margin-bottom:1rem;
+    }
+    .sensors div { display:flex; flex-direction:column; }
+
+    .footer {
+      height:3.5rem; display:flex;
+      align-items:center; justify-content:space-between;
+      padding:0 .5rem; background:#f9f9f9; border-top:1px solid var(--airea-border);
+    }
+    .footer button {
+      flex:1; margin:0 .25rem;
+      border:none; cursor:pointer;
+      border-radius:var(--border-radius);
+      padding:.6rem; font-size:.95rem;
+      box-shadow:var(--box-shadow);
+    }
+    #savePoint { background:var(--green); color:#fff; }
+    #exportXlsx { background:var(--airea-blue); color:#fff; }
   </style>
 </head>
 <body>
+  <div class="app">
+    <header>
+      <h1>Airea – Fiche de points de mesure</h1>
+      <input id="affaire" value="AF25XX">
+    </header>
+    <main>
+      <!-- zone d'affichage des erreurs -->
+      <div id="errors"></div>
 
-  <header>
-    <h1>Airea | Jury de nez</h1>
-    <select id="jury" style="font-size:.85rem;width:auto;max-width:40%;">
-      <option value="BF">Benjamin F</option>
-      <option value="FC">François C</option>
-      <option value="NG">Natalia G</option>
-      <option value="VL">Valentin L</option>
-      <option value="VP">Vincent P</option>
-    </select>
-  </header>
+      <form id="pointForm" novalidate>
+        <div class="row">
+          <label for="pointSelect">Point de mesure</label>
+          <select id="pointSelect">
+            <option value="">-- Choisir --</option>
+          </select>
+        </div>
 
-  <main>
-    <!-- affichage des erreurs -->
-    <div id="errors" role="alert" aria-live="assertive"></div>
+        <div class="row">
+          <button type="button" id="btnGeo">Obtenir adresse & coordonnées</button>
+        </div>
 
-    <!-- Point de mesure / Réinitialiser -->
-    <div class="grid2">
-      <div>
-        <label for="point">Point de mesure *</label>
-        <select id="point"><option value="">-- Choisir --</option></select>
-      </div>
-      <div>
-        <label for="new">Réinitialiser</label>
-        <button id="new">
-          Réinitialiser <i class="fa-solid fa-redo"></i>
-        </button>
-      </div>
-    </div>
+        <div class="row">
+          <label for="address">Adresse</label>
+          <input id="address" type="text" readonly>
+        </div>
 
-    <!-- Session / Heure -->
-    <div class="grid2">
-      <div>
-        <label for="session">Session *</label>
-        <select id="session"><option>AM</option><option>PM</option></select>
-      </div>
-      <div>
-        <label for="heure">Heure *</label>
-        <input type="time" id="heure">
-      </div>
-    </div>
+        <div class="coords">
+          <div>
+            <label for="latDMS">Latitude</label>
+            <input id="latDMS" type="text" readonly>
+          </div>
+          <div>
+            <label for="lngDMS">Longitude</label>
+            <input id="lngDMS" type="text" readonly>
+          </div>
+        </div>
 
-    <!-- Captures photo -->
-    <div class="grid2">
-      <div>
-        <label for="photo1">Photo 1 *</label>
-        <input type="file" id="photo1" accept="image/*" capture="environment">
-      </div>
-      <div>
-        <label for="photo2">Photo 2 *</label>
-        <input type="file" id="photo2" accept="image/*" capture="environment">
-      </div>
-    </div>
+        <div class="photos">
+          <button type="button" id="photo1Btn">
+            Photo 1<span class="btn-check">✓</span>
+          </button>
+          <button type="button" id="photo2Btn">
+            Photo 2<span class="btn-check">✓</span>
+          </button>
+          <input type="file" id="photo1" accept="image/*" capture="environment" style="display:none">
+          <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
+        </div>
 
-    <!-- Vent -->
-    <div class="grid2">
-      <div>
-        <label for="ventDir">Direction du vent</label>
-        <input type="text" id="ventDir">
-      </div>
-      <div>
-        <label for="ventVit">Vitesse du vent (m/s)</label>
-        <input type="number" id="ventVit" min="0" step="0.1" value="0">
-      </div>
-    </div>
+        <div class="sensors">
+          <div>
+            <label for="no2">NO₂</label>
+            <input id="no2" type="number">
+          </div>
+          <div>
+            <label for="c6h6">C₆H₆</label>
+            <input id="c6h6" type="number">
+          </div>
+          <div>
+            <label for="pm10">PM₁₀</label>
+            <input id="pm10" type="number">
+          </div>
+        </div>
 
-    <!-- Notes -->
-    <div id="notes"></div>
+        <div class="row">
+          <label for="datetime">Date & heure</label>
+          <input id="datetime" type="datetime-local" required>
+        </div>
+      </form>
+    </main>
 
-    <!-- Commentaires -->
-    <label for="commentaire">Commentaires :</label>
-    <textarea id="commentaire"></textarea>
-  </main>
+    <footer class="footer">
+      <button type="button" id="savePoint">Enregistrer</button>
+      <button type="button" id="exportXlsx">Export en .xlsx</button>
+    </footer>
+  </div>
 
-  <footer>
-    <button id="add">Enregistrer la mesure</button>
-    <button id="download">Tout exporter en XLSX</button>
-  </footer>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <script>
-  let dataMap = JSON.parse(localStorage.getItem('mesuresMap') || '{}');
-  let saved = true;
+  document.addEventListener('DOMContentLoaded', () => {
+    const get = id => document.getElementById(id);
+    const pointSelect = get('pointSelect'),
+          btnGeo      = get('btnGeo'),
+          btnSave     = get('savePoint'),
+          btnExport   = get('exportXlsx'),
+          addressEl   = get('address'),
+          latEl       = get('latDMS'),
+          lngEl       = get('lngDMS'),
+          no2El       = get('no2'),
+          c6h6El      = get('c6h6'),
+          pm10El      = get('pm10'),
+          datetimeEl  = get('datetime'),
+          photo1      = get('photo1'),
+          photo2      = get('photo2'),
+          photo1Btn   = get('photo1Btn'),
+          photo2Btn   = get('photo2Btn'),
+          errorsDiv   = get('errors'),
+          affaireEl   = get('affaire');
+    const points = {};
+    let lastB64_1 = null, lastB64_2 = null;
 
-  const pointSel   = document.getElementById('point');
-  const sessionSel = document.getElementById('session');
-  const jurySel    = document.getElementById('jury');
-  const addBtn     = document.getElementById('add');
-  const errorsDiv  = document.getElementById('errors');
-  const photo1     = document.getElementById('photo1');
-  const photo2     = document.getElementById('photo2');
-
-  // Charger jury
-  const savedJury = localStorage.getItem('selectedJury');
-  if (savedJury) jurySel.value = savedJury;
-  jurySel.addEventListener('change', () => {
-    localStorage.setItem('selectedJury', jurySel.value);
-  });
-
-  // Remplir P1–P20
-  for (let i = 1; i <= 20; i++) {
-    const opt = document.createElement('option');
-    opt.value = opt.textContent = 'P' + i;
-    pointSel.appendChild(opt);
-  }
-
-  // catégories & notes
-  const categories = [
-    { nom:'Nature (A)', code:'A', bg:'#a8e6cf' },
-    { nom:'Routier (B)', code:'B', bg:'#cfd8dc' },
-    { nom:'Agriculture (C)', code:'C', bg:'#d7ccc8' },
-    { nom:'Méthaniseur (D)', code:'D', bg:'#ff8a80' },
-    { nom:'Cuisine (E)', code:'E', bg:'#fff9c4' },
-    { nom:'Déchets (F)', code:'F', bg:'#f8bbd0' },
-    { nom:'Eaux usées (G)', code:'G', bg:'#b2ebf2' },
-    { nom:'Fumée (H)', code:'H', bg:'#cfd8dc' },
-    { nom:'Industrie (I)', code:'I', bg:'#ffccbc' },
-    { nom:'Autre (J)', code:'J', bg:'#ffe082' },
-  ];
-  const notesDiv = document.getElementById('notes');
-  categories.forEach(c => {
-    const row = document.createElement('div');
-    row.className = 'note-row';
-    row.style.background = c.bg;
-    row.innerHTML = `
-      <div class="title"><strong>${c.nom}</strong></div>
-      <label>Continu<select id="cont_${c.code}">${[...Array(13)]
-        .map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
-      </select></label>
-      <label>Bouffées<select id="bouf_${c.code}">${[...Array(13)]
-        .map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
-      </select></label>`;
-    notesDiv.appendChild(row);
-  });
-
-  const $val = id => document.getElementById(id).value;
-
-  function showErrors(list) {
-    errorsDiv.innerHTML = list.length
-      ? `<ul>${list.map(msg => `<li>${msg}</li>`).join('')}</ul>`
-      : '';
-  }
-
-  function validate() {
-    const errs = [];
-    if (!pointSel.value) errs.push("Sélectionnez un point de mesure.");
-    if (!sessionSel.value) errs.push("Choisissez AM ou PM.");
-    if (!document.getElementById('heure').value) errs.push("Renseignez l'heure.");
-    if (!photo1.files.length) errs.push("Prenez la première photo.");
-    if (!photo2.files.length) errs.push("Prenez la deuxième photo.");
-    // au moins un capteur non nul ?
-    const hasSensor = categories.some(c => {
-      return parseFloat($val(`cont_${c.code}`)) > 0 ||
-             parseFloat($val(`bouf_${c.code}`)) > 0;
-    }) || parseFloat(document.getElementById('ventVit').value) > 0;
-    if (!hasSensor) errs.push("Au moins une mesure de capteur doit être > 0.");
-    return errs;
-  }
-
-  addBtn.addEventListener('click', () => {
-    const errors = validate();
-    if (errors.length) {
-      showErrors(errors);
-      return;
+    // Remplir dropdown
+    for (let i = 1; i <= 40; i++) {
+      pointSelect.add(new Option(`P${i}`, `P${i}`));
     }
-    showErrors([]);
-    const key = `${pointSel.value}_${sessionSel.value}`;
-    const row = [
-      $val('point'), $val('session'), $val('heure'),
-      $val('ventDir'), $val('ventVit'),
-      ...categories.flatMap(c => [$val(`cont_${c.code}`), $val(`bouf_${c.code}`)]),
-      $val('commentaire')
-    ];
-    dataMap[key] = row;
-    localStorage.setItem('mesuresMap', JSON.stringify(dataMap));
-    saved = true;
-    alert('Mesure enregistrée !'); // ou remplacer par un toast léger
+
+    // Met à jour label du bouton Enregistrer
+    pointSelect.addEventListener('change', () => {
+      const pt = pointSelect.value;
+      btnSave.textContent = pt ? `Enregistrer ${pt}` : 'Enregistrer';
+    });
+
+    // Date/heure par défaut
+    function nowLocal() {
+      const d = new Date(); d.setSeconds(0,0);
+      const tz = d.getTimezoneOffset();
+      return new Date(d.getTime() - tz*60000).toISOString().slice(0,16);
+    }
+    datetimeEl.value = nowLocal();
+
+    // toDMS utilitaire
+    const toDMS = v => {
+      const deg = Math.floor(v),
+            min = Math.floor((v - deg)*60),
+            sec = Math.round((v - deg - min/60)*3600);
+      return `${deg}°${min}'${sec}"`;
+    };
+
+    // Géoloc
+    btnGeo.addEventListener('click', () => {
+      if (!navigator.geolocation) return showErrors(['Géolocalisation non supportée']);
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const {latitude,longitude} = pos.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const d = await res.json(), a = d.address||{};
+        addressEl.value = `${a.house_number||''} ${a.road||''}`.trim() + ', ' + (a.city||a.town||a.village||a.county||'');
+        latEl.value = toDMS(latitude);
+        lngEl.value = toDMS(longitude);
+      }, e => showErrors([`Erreur position : ${e.message}`]));
+    });
+
+    // Transform image + EXIF
+    async function transformImageCover(file, btn) {
+      return new Promise(res => {
+        const fr = new FileReader();
+        fr.onload = async () => {
+          const img = new Image(); img.src = fr.result; await img.decode();
+          EXIF.getData(file, function() {
+            const orient = EXIF.getTag(this,'Orientation')||1;
+            const pxPerCm = 96/2.54, cw=Math.round(5.25*pxPerCm), ch=Math.round(7*pxPerCm);
+            const c = document.createElement('canvas'), ctx=c.getContext('2d');
+            c.width=cw; c.height=ch;
+            if (orient===6){ctx.translate(cw,0);ctx.rotate(Math.PI/2);}
+            if (orient===8){ctx.translate(0,ch);ctx.rotate(-Math.PI/2);}
+            if (orient===3){ctx.translate(cw,ch);ctx.rotate(Math.PI);}
+            let [w,h]=[img.width,img.height];
+            if ([6,8].includes(orient)) [w,h]=[h,w];
+            const scale=Math.max(cw/w,ch/h), dw=img.width*scale, dh=img.height*scale;
+            const dx=(cw-dw)/2, dy=(ch-dh)/2;
+            ctx.drawImage(img,dx,dy,dw,dh);
+            btn.classList.add('filled');
+            res(c.toDataURL('image/jpeg',0.9).split(',')[1]);
+          });
+        };
+        fr.readAsDataURL(file);
+      });
+    }
+    photo1Btn.addEventListener('click', () => photo1.click());
+    photo2Btn.addEventListener('click', () => photo2.click());
+    photo1.addEventListener('change', () =>
+      transformImageCover(photo1.files[0], photo1Btn).then(b64 => lastB64_1 = b64)
+    );
+    photo2.addEventListener('change', () =>
+      transformImageCover(photo2.files[0], photo2Btn).then(b64 => lastB64_2 = b64)
+    );
+
+    // Affiche un tableau d’erreurs
+    function showErrors(arr) {
+      errorsDiv.innerHTML = `<ul>${arr.map(e=>`<li>${e}</li>`).join('')}</ul>`;
+    }
+    function clearErrors() { errorsDiv.innerHTML = ''; }
+
+    // Enregistrement local
+    btnSave.addEventListener('click', () => {
+      clearErrors();
+      const errs = [];
+      const pt = pointSelect.value;
+      if (!pt) errs.push('Veuillez sélectionner un point.');
+      if (!datetimeEl.value) errs.push('Date & heure obligatoires.');
+      if (!no2El.value && !c6h6El.value && !pm10El.value)
+        errs.push('Au moins une valeur de capteur requise.');
+      if (!lastB64_1 || !lastB64_2)
+        errs.push('Deux photos obligatoires.');
+
+      if (errs.length) {
+        showErrors(errs);
+        return;
+      }
+
+      // stockage
+      points[pt] = {
+        address: addressEl.value, lat:latEl.value, lng:lngEl.value,
+        no2:no2El.value, c6h6:c6h6El.value, pm10:pm10El.value,
+        datetime:datetimeEl.value, b64_1:lastB64_1, b64_2:lastB64_2
+      };
+
+      // reset UI
+      addressEl.value = latEl.value = lngEl.value = '';
+      no2El.value = c6h6El.value = pm10El.value = '';
+      datetimeEl.value = nowLocal();
+      photo1Btn.classList.remove('filled');
+      photo2Btn.classList.remove('filled');
+      lastB64_1 = lastB64_2 = null;
+      pointSelect.value = '';
+      btnSave.textContent = 'Enregistrer';
+      clearErrors();
+      alert(`Données ${pt} enregistrées !`);
+    });
+
+    // Export XLSX (inchangé)
+    btnExport.addEventListener('click', async () => {
+      if (!confirm("Tu es sûr ? Sauvegarder réinitialise l’app.")) return;
+      const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet('Mesures');
+      ws.columns = [
+        {header:'Point', key:'point', width:10},
+        {header:'Adresse', key:'address', width:30},
+        {header:'Lat DMS', key:'lat', width:15},
+        {header:'Lng DMS', key:'lng', width:15},
+        {header:'Photo 1', key:'photo1', width:21.4},
+        {header:'Photo 2', key:'photo2', width:21.4},
+        {header:'NO₂', key:'no2', width:10},
+        {header:'C₆H₆', key:'c6h6', width:10},
+        {header:'PM₁₀', key:'pm10', width:10},
+        {header:'DateHeure', key:'datetime', width:20},
+      ];
+      ws.getColumn('datetime').numFmt = 'dd/mm/yy hh:mm';
+      const pxPerCm = 96/2.54, imgW=Math.round(5.25*pxPerCm), imgH=Math.round(7*pxPerCm);
+      let row = 2;
+      for (const [pt,p] of Object.entries(points)) {
+        ws.addRow({
+          point:pt, address:p.address, lat:p.lat, lng:p.lng,
+          photo1:'', photo2:'',
+          no2:p.no2, c6h6:p.c6h6, pm10:p.pm10,
+          datetime:new Date(p.datetime)
+        });
+        ws.getRow(row).height = Math.round(imgH * 0.75);
+        if (p.b64_1) {
+          const id1 = wb.addImage({ base64:p.b64_1, extension:'jpeg' });
+          ws.addImage(id1, { tl:{col:4,row:row-1}, ext:{width:imgW,height:imgH} });
+        }
+        if (p.b64_2) {
+          const id2 = wb.addImage({ base64:p.b64_2, extension:'jpeg' });
+          ws.addImage(id2, { tl:{col:5,row:row-1}, ext:{width:imgW,height:imgH} });
+        }
+        row++;
+      }
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf],{type:'application/octet-stream'}), `${affaireEl.value||'Sans_affaire'}_Fiche_de_points_de_mesure.xlsx`);
+      Object.keys(points).forEach(k=>delete points[k]);
+      location.reload();
+    });
   });
   </script>
 </body>
