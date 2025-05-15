@@ -2,120 +2,131 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Capture Photos & Export DOCX & XLSX</title>
+  <title>Export Photos Portrait</title>
+  <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx/build/browser/docx.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
-    button { margin: 10px 5px 10px 0; padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    img { display: block; margin: 10px 0; max-width: 100%; height: auto; border: 1px solid #ccc; }
-    .buttons { margin-bottom: 20px; }
+    button { margin: 0.5em; padding: 0.75em 1.5em; font-size: 1em; }
+    img { display: block; margin: 0.5em 0; max-width: 80vw; height: auto; }
   </style>
 </head>
 <body>
-  <h1>Capture de deux photos et export DOCX & XLSX</h1>
-
-  <div class="buttons">
-    <button id="btnPhoto1">Prendre Photo 1</button>
-    <button id="btnPhoto2">Prendre Photo 2</button>
+  <button id="btn1">Prendre photo 1</button>
+  <img id="preview1" alt="Aucune photo 1">
+  <button id="btn2">Prendre photo 2</button>
+  <img id="preview2" alt="Aucune photo 2">
+  <div>
+    <button id="exportDocx" disabled>Exporter .docx</button>
+    <button id="exportXlsx" disabled>Exporter .xlsx</button>
   </div>
-  <input type="file" id="inputPhoto1" accept="image/*" capture="environment" style="display:none">
-  <input type="file" id="inputPhoto2" accept="image/*" capture="environment" style="display:none">
-  <img id="preview1" alt="Aperçu Photo 1">
-  <img id="preview2" alt="Aperçu Photo 2">
-
-  <div class="buttons">
-    <button id="exportDocxBtn" disabled>Exporter DOCX</button>
-    <button id="exportXlsxBtn" disabled>Exporter XLSX</button>
-  </div>
-
-  <!-- Librairies : blueimp-load-image, docx, ExcelJS, FileSaver -->
-  <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docx@7.2.0/build/index.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
 
   <script>
-    const { Document, Packer, Paragraph, Table, TableRow, TableCell, ImageRun } = window.docx;
-    const imagesData = [{}, {}];
+    // conversion cm → px (96 DPI)
+    const cmToPx = cm => Math.round(cm / 2.54 * 96);
+    const TARGET_W = cmToPx(5.25); // ≈198 px
+    const TARGET_H = cmToPx(7);    // ≈265 px
 
-    // Setup capture buttons
-    document.getElementById('btnPhoto1').onclick = () => inputPhoto1.click();
-    document.getElementById('btnPhoto2').onclick = () => inputPhoto2.click();
+    let images = []; // contiendra { buffer, previewURL }
 
-    // Normalize image using loadImage
-    async function processFile(file) {
+    // charge + normalise + encode en WebP
+    async function processFile(file, previewImgEl) {
+      const dataURL = await new Promise(r => {
+        const fr = new FileReader();
+        fr.onload = () => r(fr.result);
+        fr.readAsDataURL(file);
+      });
+      const { canvas } = await new Promise((resolve, reject) => {
+        loadImage(
+          dataURL,
+          imgOrCanvas => resolve({ canvas: imgOrCanvas }),
+          { orientation: true, canvas: true }
+        );
+      });
       return new Promise((resolve, reject) => {
-        loadImage(file, async canvas => {
-          const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        canvas.toBlob(blob => {
           const fr = new FileReader();
-          fr.onload = () => resolve({ buffer: fr.result, width: canvas.width, height: canvas.height, dataURL: canvas.toDataURL('image/png') });
+          fr.onload = () => {
+            const buffer = fr.result;
+            const previewURL = URL.createObjectURL(blob);
+            previewImgEl.src = previewURL;
+            resolve({ buffer, previewURL });
+          };
           fr.onerror = reject;
           fr.readAsArrayBuffer(blob);
-        }, { orientation: true, canvas: true });
+        }, 'image/webp', 0.8);
       });
     }
 
-    // Handle file inputs
-    inputPhoto1.addEventListener('change', async e => {
-      if (!e.target.files.length) return;
-      imagesData[0] = await processFile(e.target.files[0]);
-      preview1.src = imagesData[0].dataURL;
-      toggleExport();
-    });
-    inputPhoto2.addEventListener('change', async e => {
-      if (!e.target.files.length) return;
-      imagesData[1] = await processFile(e.target.files[0]);
-      preview2.src = imagesData[1].dataURL;
-      toggleExport();
-    });
-
-    function toggleExport() {
-      const ready = imagesData[0].buffer && imagesData[1].buffer;
-      exportDocxBtn.disabled = !ready;
-      exportXlsxBtn.disabled = !ready;
+    function setupButton(btnId, previewId, idx) {
+      document.getElementById(btnId).addEventListener('click', async () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment';
+        input.onchange = async () => {
+          const file = input.files[0];
+          images[idx] = await processFile(file, document.getElementById(previewId));
+          // activer exports si on a deux images
+          if (images[0] && images[1]) {
+            exportDocxBtn.disabled = false;
+            exportXlsxBtn.disabled = false;
+          }
+        };
+        input.click();
+      });
     }
 
-    // Export DOCX
+    setupButton('btn1', 'preview1', 0);
+    setupButton('btn2', 'preview2', 1);
+
+    // --- Export DOCX ---
+    const exportDocxBtn = document.getElementById('exportDocx');
     exportDocxBtn.addEventListener('click', async () => {
-      try {
-        const rows = imagesData.map((img, i) => new TableRow({ children: [
-          new TableCell({ children: [
-            new Paragraph(`Photo ${i + 1}`),
-            new Paragraph({ children: [ new ImageRun({ data: img.buffer, transformation: { width: img.width * 0.5, height: img.height * 0.5 } }) ] })
-          ] })
-        ] }));
-        const table = new Table({ rows });
-        const doc = new Document({ sections: [{ children: [table] }] });
-        const blob = await Packer.toBlob(doc);
-        saveAs(blob, 'photos.docx');
-      } catch (err) {
-        console.error(err);
-        alert('Erreur export DOCX: ' + err.message);
-      }
+      const { Document, Packer, Paragraph, ImageRun, Table, TableRow, TableCell } = window.docx;
+      const doc = new Document();
+      const rows = images.map((img, i) => new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph(`Photo ${i+1}`),
+              new Paragraph({
+                children: [new ImageRun({
+                  data: img.buffer,
+                  transformation: { width: TARGET_W, height: TARGET_H }
+                })]
+              })
+            ]
+          })
+        ]
+      }));
+      const table = new Table({ rows });
+      doc.addSection({ children: [table] });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, 'photos.docx');
     });
 
-    // Export XLSX
+    // --- Export XLSX ---
+    const exportXlsxBtn = document.getElementById('exportXlsx');
     exportXlsxBtn.addEventListener('click', async () => {
-      try {
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Photos');
-        // Set column widths and row heights
-        worksheet.getColumn(1).width = 30;
-        worksheet.getColumn(2).width = 30;
-        worksheet.getRow(1).height = imagesData[0].height * 0.07;
-        worksheet.getRow(2).height = imagesData[1].height * 0.07;
-        // Add images
-        imagesData.forEach((img, idx) => {
-          const ext = { width: img.width * 0.5, height: img.height * 0.5 };
-          const imageId = workbook.addImage({ buffer: img.buffer, extension: 'png' });
-          worksheet.addImage(imageId, { tl: { col: idx, row: idx }, ext });
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Photos');
+      // ajuster la taille de la colonne A pour TARGET_W
+      ws.getColumn(1).width = TARGET_W * 0.14; // ExcelJS width approximé en caractères
+      ws.getRow(1).height = TARGET_H * 0.75;   // ExcelJS row.height en points
+
+      // insérer chaque image
+      images.forEach((img, i) => {
+        const id = wb.addImage({ buffer: img.buffer, extension: 'webp' });
+        ws.addImage(id, {
+          tl: { col: 0, row: i },
+          ext: { width: TARGET_W, height: TARGET_H }
         });
-        const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), 'photos.xlsx');
-      } catch (err) {
-        console.error(err);
-        alert('Erreur export XLSX: ' + err.message);
-      }
+      });
+
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf]), 'photos.xlsx');
     });
   </script>
 </body>
