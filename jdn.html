@@ -35,7 +35,7 @@
     }
     label { display: block; font-size: .85rem; }
 
-    /* styles partagés pour select, input et bouton */
+    /* styles partagés pour select, input et button */
     select,
     input[type="time"],
     input[type="number"],
@@ -53,7 +53,7 @@
       color: #333;
     }
 
-    /* bouton "Nouvelle mesure" légèrement grisé */
+    /* bouton Réinitialiser légèrement grisé */
     #new {
       background: #f0f0f0;
       cursor: pointer;
@@ -79,9 +79,10 @@
       border: none;
       border-radius: 4px;
       color: white;
+      cursor: pointer;
     }
-    #add     { background: #757575; }
-    #download{ background: #e53935; }
+    #add      { background: #757575; }
+    #download { background: #e53935; }
 
     /* notes rows (inchangées) */
     #notes .note-row {
@@ -110,16 +111,16 @@
 
   <main>
 
-    <!-- Point de mesure / Nouvelle mesure avec titres -->
+    <!-- Point de mesure / Réinitialiser avec titres -->
     <div class="grid2">
       <div>
         <label for="point">Point de mesure</label>
         <select id="point"></select>
       </div>
       <div>
-        <label for="new">Nouvelle mesure</label>
+        <label for="new">Réinitialiser</label>
         <button id="new">
-          <i class="fa-solid fa-flask"></i>
+          Réinitialiser <i class="fa-solid fa-rotate-right"></i>
         </button>
       </div>
     </div>
@@ -220,7 +221,6 @@
   });
 
   const $val = id => document.getElementById(id).value;
-
   function saveMap()    { localStorage.setItem('mesuresMap', JSON.stringify(dataMap)); }
   function getNowHM()   { return new Date().toTimeString().slice(0,5); }
   function updateAddLabel() {
