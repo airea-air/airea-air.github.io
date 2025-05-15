@@ -2,122 +2,350 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Export Photos Portrait Rognées (XLSX)</title>
-  <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
+  <title>Airea | Jury de nez</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- CSS & libs -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-p+6FUKn8zlF4OFklJ0ncP1BohUNRH/Rdzh1s5aZ/L9ZZSPgk/Vxmjc+XhHzs+o3rRjRA3SWcCiUz6P2e7Z8U9Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-load-image/5.16.0/load-image.all.min.js"></script>
+
   <style>
-    button { margin: 0.5em; padding: 0.75em 1.5em; font-size: 1em; }
+    body { font-family: sans-serif; margin: 0; padding-bottom: 60px; }
+    header {
+      background: #3f51b5; color: white;
+      padding: 1rem; display: flex;
+      align-items: center; justify-content: space-between;
+    }
+    header h1 { margin: 0; font-size: 1.2rem; }
+    main { padding: 0.5rem 1rem; }
+    .grid2 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.5rem; margin-bottom: 0.5rem;
+    }
+    label { display: block; font-size: .85rem; }
+    select, input, textarea, button {
+      width: 100%; padding: .4rem; font-size: .85rem;
+      margin-top: .2rem; box-sizing: border-box;
+      border: 1px solid #ccc; border-radius: 2px;
+      background: white; color: #333;
+    }
+    #new { background: #f0f0f0; cursor: pointer; }
+    button i {
+      font-family: "Font Awesome 6 Free"; font-weight: 900;
+      margin-left: .4rem;
+    }
+    textarea { height: 3rem; }
+    #errors { margin-bottom: .5rem; color: #b00020; font-size:.9rem; }
+    #errors ul { padding-left:1.2rem; margin:0; }
+    footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #3f51b5; padding: .3rem 1rem;
+      display: flex; gap: .3rem;
+    }
+    footer button {
+      flex:1; padding:.6rem; font-size:.9rem;
+      border:none; border-radius:4px; color:white;
+      cursor:pointer;
+    }
+    #add      { background:#757575; }
+    #exportXlsx { background:#e53935; }
+    #notes .note-row {
+      display:flex; align-items:center; padding:.3rem;
+      gap:.3rem; border-radius:4px; margin-bottom:.2rem;
+      flex-wrap:wrap;
+    }
+    #notes .note-row>.title { flex-basis:100%; }
+    #notes .note-row label { flex:1; font-size:.8rem; margin:0; }
+    #notes .note-row select { flex:0 0 50px; padding:.2rem; font-size:.8rem; }
   </style>
 </head>
 <body>
-  <button id="btn1">Prendre photo 1</button>
-  <button id="btn2">Prendre photo 2</button>
-  <div>
-    <button id="exportXlsx" disabled>Exporter .xlsx</button>
-  </div>
+
+  <header>
+    <h1>Airea | Jury de nez</h1>
+    <select id="jury" style="font-size:.85rem;width:auto;max-width:40%;">
+      <option value="BF">Benjamin F</option>
+      <option value="FC">François C</option>
+      <option value="NG">Natalia G</option>
+      <option value="VL">Valentin L</option>
+      <option value="VP">Vincent P</option>
+    </select>
+  </header>
+
+  <main>
+    <div id="errors" role="alert" aria-live="assertive"></div>
+
+    <div class="grid2">
+      <div>
+        <label for="point">Point de mesure *</label>
+        <select id="point"><option value="">-- Choisir --</option></select>
+      </div>
+      <div>
+        <label for="new">Réinitialiser</label>
+        <button id="new">
+          Réinitialiser <i class="fa-solid fa-redo"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label for="session">Session *</label>
+        <select id="session"><option>AM</option><option>PM</option></select>
+      </div>
+      <div>
+        <label for="heure">Heure *</label>
+        <input type="time" id="heure">
+      </div>
+    </div>
+
+    <!-- boutons photos remplaçant les file inputs -->
+    <div class="grid2">
+      <div>
+        <label>Photo 1 * <small>(5×7 cm)</small></label>
+        <button id="btn1">Prendre Photo 1</button>
+      </div>
+      <div>
+        <label>Photo 2 * <small>(5×7 cm)</small></label>
+        <button id="btn2">Prendre Photo 2</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <label for="ventDir">Direction du vent</label>
+        <input type="text" id="ventDir">
+      </div>
+      <div>
+        <label for="ventVit">Vitesse du vent (m/s)</label>
+        <input type="number" id="ventVit" min="0" step="0.1" value="0">
+      </div>
+    </div>
+
+    <div id="notes"></div>
+
+    <label for="commentaire">Commentaires :</label>
+    <textarea id="commentaire"></textarea>
+  </main>
+
+  <footer>
+    <button id="add">Enregistrer la mesure</button>
+    <button id="exportXlsx" disabled>Tout exporter en XLSX</button>
+  </footer>
 
   <script>
-    // conversion cm → px (96 DPI)
-    const cmToPx = cm => Math.round(cm / 2.54 * 96);
-    const TARGET_W = cmToPx(5.25); // ≈198 px
-    const TARGET_H = cmToPx(7);    // ≈265 px
-    const TARGET_RATIO = TARGET_W / TARGET_H; // = 4/3 portrait
+  // données & refs
+  let dataMap = JSON.parse(localStorage.getItem('mesuresMap')||'{}');
+  let saved = true;
+  const pointSel   = document.getElementById('point');
+  const sessionSel = document.getElementById('session');
+  const jurySel    = document.getElementById('jury');
+  const addBtn     = document.getElementById('add');
+  const exportBtn  = document.getElementById('exportXlsx');
+  const resetBtn   = document.getElementById('new');
+  const errorsDiv  = document.getElementById('errors');
 
-    let images = []; // contiendra { buffer }
+  // remplir points
+  for(let i=1;i<=20;i++){
+    const o=document.createElement('option');
+    o.value=o.textContent='P'+i;
+    pointSel.appendChild(o);
+  }
 
-    // charge, normalise, rogner au centre, resize & encode en PNG
-    async function processFile(file) {
-      // 1. lire en DataURL
-      const dataURL = await new Promise(resolve => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(fr.result);
-        fr.readAsDataURL(file);
-      });
-      // 2. normalisation EXIF via blueimp-load-image
-      const { canvas: normCanvas } = await new Promise((resolve, reject) => {
-        loadImage(
-          dataURL,
-          imgOrCanvas => resolve({ canvas: imgOrCanvas }),
-          { orientation: true, canvas: true }
-        );
-      });
-      // 3. rognage central au ratio TARGET_RATIO
-      const w = normCanvas.width, h = normCanvas.height;
-      let sx, sy, sw, sh;
-      if (w / h > TARGET_RATIO) {
-        // trop large → rogner sur la largeur
-        sh = h;
-        sw = h * TARGET_RATIO;
-        sx = (w - sw) / 2;
-        sy = 0;
-      } else {
-        // trop haut → rogner sur la hauteur
-        sw = w;
-        sh = w / TARGET_RATIO;
-        sx = 0;
-        sy = (h - sh) / 2;
-      }
-      // 4. dessiner dans un canvas cible
-      const targetCanvas = document.createElement('canvas');
-      targetCanvas.width = TARGET_W;
-      targetCanvas.height = TARGET_H;
-      const ctx = targetCanvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(normCanvas, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
-      // 5. exporter PNG (sans perte)
-      return new Promise((resolve, reject) => {
-        targetCanvas.toBlob(blob => {
-          const fr = new FileReader();
-          fr.onload = () => {
-            resolve(fr.result);  // ArrayBuffer
-          };
-          fr.onerror = reject;
-          fr.readAsArrayBuffer(blob);
-        }, 'image/png');
-      });
-    }
+  // catégories & notes
+  const categories = [
+    {nom:'Nature (A)',code:'A',bg:'#a8e6cf'},
+    {nom:'Routier (B)',code:'B',bg:'#cfd8dc'},
+    {nom:'Agriculture (C)',code:'C',bg:'#d7ccc8'},
+    {nom:'Méthaniseur (D)',code:'D',bg:'#ff8a80'},
+    {nom:'Cuisine (E)',code:'E',bg:'#fff9c4'},
+    {nom:'Déchets (F)',code:'F',bg:'#f8bbd0'},
+    {nom:'Eaux usées (G)',code:'G',bg:'#b2ebf2'},
+    {nom:'Fumée (H)',code:'H',bg:'#cfd8dc'},
+    {nom:'Industrie (I)',code:'I',bg:'#ffccbc'},
+    {nom:'Autre (J)',code:'J',bg:'#ffe082'}
+  ];
+  const notesDiv = document.getElementById('notes');
+  categories.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='note-row';row.style.background=c.bg;
+    row.innerHTML=`
+      <div class="title"><strong>${c.nom}</strong></div>
+      <label>Continu<select id="cont_${c.code}">
+        ${[...Array(13)].map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
+      </select></label>
+      <label>Bouffées<select id="bouf_${c.code}">
+        ${[...Array(13)].map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
+      </select></label>`;
+    notesDiv.appendChild(row);
+  });
 
-    function setupButton(btnId, idx) {
-      document.getElementById(btnId).addEventListener('click', () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.capture = 'environment';
-        input.onchange = async () => {
-          images[idx] = await processFile(input.files[0]);
-          if (images[0] && images[1]) {
-            document.getElementById('exportXlsx').disabled = false;
-          }
-        };
-        input.click();
-      });
-    }
+  // helpers
+  const $val = id=>document.getElementById(id).value;
+  function saveMap(){localStorage.setItem('mesuresMap',JSON.stringify(dataMap));}
+  function getNowHM(){return new Date().toTimeString().slice(0,5);}
+  function showErrors(errs){
+    errorsDiv.innerHTML=errs.length?`<ul>${errs.map(e=>`<li>${e}</li>`).join('')}</ul>`:'';
+  }
+  function updateAddLabel(){
+    addBtn.textContent = dataMap[`${pointSel.value}_${sessionSel.value}`]
+      ? `Mettre à jour ${pointSel.value}`
+      : `Enregistrer la mesure`;
+  }
 
-    setupButton('btn1', 0);
-    setupButton('btn2', 1);
-
-    // --- Export XLSX ---
-    document.getElementById('exportXlsx').addEventListener('click', async () => {
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet('Photos');
-      // ajustement colonnes/lignes pour la taille cm → points/caractères
-      ws.getColumn(1).width = TARGET_W * 0.14;         // colonne A
-      ws.getRow(1).height = TARGET_H * 0.75;           // ligne 1
-      ws.getRow(2).height = TARGET_H * 0.75;           // ligne 2
-
-      images.forEach((buffer, i) => {
-        const id = wb.addImage({ buffer, extension: 'png' });
-        ws.addImage(id, {
-          tl: { col: 0, row: i },
-          ext: { width: TARGET_W, height: TARGET_H }
-        });
-      });
-
-      const buf = await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buf]), 'photos.xlsx');
+  // reset
+  function resetForm(){
+    if(!confirm("Réinitialiser?"))return;
+    sessionSel.value='AM';
+    document.getElementById('heure').value=getNowHM();
+    document.getElementById('ventDir').value='';
+    document.getElementById('ventVit').value='0';
+    document.getElementById('commentaire').value='';
+    categories.forEach(c=>{
+      document.getElementById(`cont_${c.code}`).value='0.0';
+      document.getElementById(`bouf_${c.code}`).value='0.0';
     });
+    images=[]; exportBtn.disabled=true;
+    showErrors([]);
+    updateAddLabel();
+  }
+  resetBtn.addEventListener('click',resetForm);
+
+  // load existing
+  function loadIfExists(){
+    const key=`${pointSel.value}_${sessionSel.value}`;
+    if(dataMap[key]){
+      const r=dataMap[key];
+      document.getElementById('heure').value=r[2];
+      document.getElementById('ventDir').value=r[3];
+      document.getElementById('ventVit').value=r[4];
+      categories.forEach((c,i)=>{
+        document.getElementById(`cont_${c.code}`).value=r[5+2*i];
+        document.getElementById(`bouf_${c.code}`).value=r[5+2*i+1];
+      });
+      document.getElementById('commentaire').value=r[r.length-1];
+    } else resetForm();
+    updateAddLabel();
+  }
+  [pointSel,sessionSel].forEach(el=>el.addEventListener('change',loadIfExists));
+  window.addEventListener('load',()=>{
+    // jury
+    const sj=localStorage.getItem('selectedJury');
+    if(sj) jurySel.value=sj;
+    jurySel.addEventListener('change',()=>localStorage.setItem('selectedJury',jurySel.value));
+    // initialize
+    document.getElementById('heure').value=getNowHM();
+    loadIfExists();
+  });
+
+  // validation
+  function validate(){
+    const errs=[];
+    if(!pointSel.value)               errs.push("Sélectionnez un point.");
+    if(!sessionSel.value)             errs.push("Choisissez AM/PM.");
+    if(!document.getElementById('heure').value) errs.push("Renseignez l'heure.");
+    if(!images[0]||!images[1])        errs.push("Deux photos requises.");
+    const hasSensor=categories.some(c=>
+      parseFloat($val(`cont_${c.code}`))>0||
+      parseFloat($val(`bouf_${c.code}`))>0
+    )||parseFloat($val('ventVit'))>0;
+    if(!hasSensor) errs.push("Au moins une mesure > 0.");
+    return errs;
+  }
+
+  // image processing snippet
+  const cmToPx = cm=>Math.round(cm/2.54*96);
+  const TARGET_W=cmToPx(5.25), TARGET_H=cmToPx(7), TARGET_RATIO=TARGET_W/TARGET_H;
+  let images=[];
+  async function processFile(file){
+    const dataURL=await new Promise(res=>{
+      const fr=new FileReader();
+      fr.onload=()=>res(fr.result);
+      fr.readAsDataURL(file);
+    });
+    const {canvas:normCanvas}=await new Promise((res,rej)=>{
+      loadImage(dataURL,img=>res({canvas:img}),{orientation:true,canvas:true});
+    });
+    const w=normCanvas.width,h=normCanvas.height;
+    let sx,sy,sw,sh;
+    if(w/h>TARGET_RATIO){
+      sh=h; sw=h*TARGET_RATIO; sx=(w-sw)/2; sy=0;
+    } else {
+      sw=w; sh=w/TARGET_RATIO; sx=0; sy=(h-sh)/2;
+    }
+    const targetCanvas=document.createElement('canvas');
+    targetCanvas.width=TARGET_W; targetCanvas.height=TARGET_H;
+    const ctx=targetCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+    ctx.drawImage(normCanvas,sx,sy,sw,sh,0,0,TARGET_W,TARGET_H);
+    return new Promise(res=>{
+      targetCanvas.toBlob(blob=>{
+        const fr=new FileReader();
+        fr.onload=()=>res(fr.result);
+        fr.readAsArrayBuffer(blob);
+      },'image/png');
+    });
+  }
+  function setupButton(btnId,idx){
+    document.getElementById(btnId).addEventListener('click',()=>{
+      const inp=document.createElement('input');
+      inp.type='file'; inp.accept='image/*'; inp.capture='environment';
+      inp.onchange=async()=>{ images[idx]=await processFile(inp.files[0]);
+        if(images[0]&&images[1]) exportBtn.disabled=false;
+      };
+      inp.click();
+    });
+  }
+  setupButton('btn1',0);
+  setupButton('btn2',1);
+
+  // enregistrer mesure (localStorage)
+  addBtn.addEventListener('click',()=>{
+    const errs=validate();
+    if(errs.length){ showErrors(errs); return; }
+    showErrors([]);
+    const key=`${pointSel.value}_${sessionSel.value}`;
+    const row=[
+      $val('point'),$val('session'),$val('heure'),
+      $val('ventDir'),$val('ventVit'),
+      ...categories.flatMap(c=>[$val(`cont_${c.code}`),$val(`bouf_${c.code}`)]),
+      $val('commentaire')
+    ];
+    dataMap[key]=row; saveMap(); alert('Mesure enregistrée !'); updateAddLabel();
+  });
+
+  // Export XLSX avec mesures + photos
+  exportBtn.addEventListener('click', async()=>{
+    const wb=new ExcelJS.Workbook();
+    // feuilles mesures
+    const ms = wb.addWorksheet('Mesures');
+    const header=[
+      'Point','Session','Heure','DirectionVent','VitesseVent',
+      ...categories.flatMap(c=>[`Intensite_${c.code}_continu`,`Intensite_${c.code}_bousee`]),
+      'Commentaire'
+    ];
+    ms.addRow(header);
+    Object.keys(dataMap).sort().forEach(k=>ms.addRow(dataMap[k]));
+    // feuille photos
+    const imgSheet = wb.addWorksheet('Photos');
+    imgSheet.getColumn(1).width = TARGET_W * 0.14;
+    imgSheet.getRow(1).height = TARGET_H * 0.75;
+    imgSheet.getRow(2).height = TARGET_H * 0.75;
+    images.forEach((buffer,i)=>{
+      const id=wb.addImage({buffer,extension:'png'});
+      imgSheet.addImage(id,{
+        tl:{col:0,row:i}, ext:{width:TARGET_W,height:TARGET_H}
+      });
+    });
+    const buf=await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buf]), `JDN_${jurySel.value}.xlsx`);
+  });
   </script>
 </body>
 </html>
