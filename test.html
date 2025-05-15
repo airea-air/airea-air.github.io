@@ -38,66 +38,43 @@
     document.getElementById('inputPhoto2').addEventListener('change', e => handleFile(e, 2));
 
     function handleFile(e, num) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
       reader.onload = evt => {
         const dataURL = evt.target.result;
         EXIF.getData(file, function() {
           const ori = EXIF.getTag(this, 'Orientation') || 1;
-          normalizeOrientation(dataURL, ori).then(normDataURL => {
-            if (num === 1) {
-              dataURL1 = normDataURL;
-              document.getElementById('preview1').src = dataURL1;
-            } else {
-              dataURL2 = normDataURL;
-              document.getElementById('preview2').src = dataURL2;
-            }
-            checkReady();
+          normalizeOrientation(dataURL, ori).then(norm => {
+            if (num === 1) { dataURL1 = norm; document.getElementById('preview1').src = norm; }
+            else         { dataURL2 = norm; document.getElementById('preview2').src = norm; }
+            document.getElementById('exportBtn').disabled = !(dataURL1 && dataURL2);
           });
         });
       };
       reader.readAsDataURL(file);
     }
 
-    function checkReady() {
-      document.getElementById('exportBtn').disabled = !(dataURL1 && dataURL2);
-    }
-
-    // Normalisation orientation et ratio via canvas
     function normalizeOrientation(dataURL, orientation) {
       return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-          const maxW = 150, maxH = 200;
-          // Calcul ratio
-          let width = img.width, height = img.height;
-          const ratio = Math.min(maxW / width, maxH / height);
-          width *= ratio; height *= ratio;
-
-          // Canvas dimensions selon orientation
+        const img = new Image(); img.onload = () => {
+          // Redessiner sans EXIF, en mode auto-rotation
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          if (orientation >= 5 && orientation <= 8) {
-            canvas.width = height;
-            canvas.height = width;
-          } else {
-            canvas.width = width;
-            canvas.height = height;
-          }
-
-          // Appliquer rotation
+          let w = img.width, h = img.height;
+          // Inverser dimensions pour les rotations 90/270
+          if (orientation >= 5 && orientation <= 8) [w, h] = [h, w];
+          canvas.width = w; canvas.height = h;
+          // Appliquer transformation
           switch (orientation) {
-            case 2: ctx.transform(-1, 0, 0, 1, width, 0); break; // miroir horizontal
-            case 3: ctx.transform(-1, 0, 0, -1, width, height); break; // 180°
-            case 4: ctx.transform(1, 0, 0, -1, 0, height); break; // miroir vertical
-            case 5: ctx.transform(0, 1, 1, 0, 0, 0); break; // rotation 90° et miroir
-            case 6: ctx.transform(0, 1, -1, 0, height, 0); break; // rotation 90°
-            case 7: ctx.transform(0, -1, -1, 0, height, width); break; // rotation 270° et miroir
-            case 8: ctx.transform(0, -1, 1, 0, 0, width); break; // rotation 270°
-            default: break;
+            case 2: ctx.translate(w, 0); ctx.scale(-1,1); break;
+            case 3: ctx.translate(w, h); ctx.rotate(Math.PI); break;
+            case 4: ctx.translate(0, h); ctx.scale(1,-1); break;
+            case 5: ctx.rotate(0.5*Math.PI); ctx.scale(1,-1); break;
+            case 6: ctx.rotate(0.5*Math.PI); ctx.translate(0, -h); break;
+            case 7: ctx.rotate(1.5*Math.PI); ctx.scale(1,-1); break;
+            case 8: ctx.rotate(1.5*Math.PI); ctx.translate(-w, 0); break;
           }
-          ctx.drawImage(img, 0, 0, width, height);
+          ctx.drawImage(img, 0, 0);
           resolve(canvas.toDataURL('image/png'));
         };
         img.src = dataURL;
@@ -105,25 +82,23 @@
     }
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Photos');
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Photos');
+      ws.getColumn(1).width = 20; ws.getColumn(2).width = 20;
+      ws.getRow(1).height = 120; ws.getRow(2).height = 120;
 
-      worksheet.getColumn(1).width = 30;
-      worksheet.getColumn(2).width = 30;
-      worksheet.getRow(1).height = 120;
-      worksheet.getRow(2).height = 120;
-
-      async function addImageFromDataURL(dataURL, col, row) {
-        const imgId = workbook.addImage({ base64: dataURL, extension: 'png' });
-        worksheet.addImage(imgId, { tl: { col, row }, ext: { width: null, height: null } });
+      async function addFixed16by9(dataURL, col, row) {
+        const imgId = wb.addImage({ base64: dataURL, extension: 'png' });
+        // 16:9 portrait => width < height
+        const extW = 90, extH = 160;
+        ws.addImage(imgId, { tl:{col,row}, ext:{width:extW, height:extH} });
       }
 
-      await addImageFromDataURL(dataURL1, 0, 0);
-      await addImageFromDataURL(dataURL2, 1, 1);
+      await addFixed16by9(dataURL1, 0, 0);
+      await addFixed16by9(dataURL2, 1, 1);
 
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/octet-stream' });
-      saveAs(blob, 'photos.xlsx');
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf]), 'photos.xlsx');
     });
   </script>
 </body>
