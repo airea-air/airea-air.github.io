@@ -24,10 +24,10 @@
   <button id="exportBtn" disabled>Exporter DOCX</button>
 
   <!-- Librairies docx et FileSaver -->
-  <script src="https://unpkg.com/docx@7.2.0/build/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.2.0/build/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
   <script>
-    const { Document, Packer, Paragraph, Table, TableRow, TableCell, Media } = docx;
+    const { Document, Packer, Paragraph, Table, TableRow, TableCell, Media } = window.docx;
     let dataURL1 = null;
     let dataURL2 = null;
 
@@ -55,30 +55,41 @@
     }
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
-      // Préparer le buffer des images
-      async function fetchBuffer(dataURL) {
-        const res = await fetch(dataURL);
-        return res.arrayBuffer();
-      }
-      const buffer1 = await fetchBuffer(dataURL1);
-      const buffer2 = await fetchBuffer(dataURL2);
+      try {
+        // Préparer le buffer des images
+        async function fetchBuffer(dataURL) {
+          const res = await fetch(dataURL);
+          return res.arrayBuffer();
+        }
+        const buffer1 = await fetchBuffer(dataURL1);
+        const buffer2 = await fetchBuffer(dataURL2);
 
-      // Créer document Word avec tableau contenant les images
-      const table = new Table({
-        rows: [
+        // Construire le tableau avec les images
+        const table = new Table({ rows: [
           new TableRow({ children: [
-            new TableCell({ children: [ new Paragraph('Photo 1'), Media.addImage(new Document(), buffer1, 200, 300) ] })
+            new TableCell({ children: [
+              new Paragraph('Photo 1'),
+              Media.addImage(doc, buffer1, 200, 300)
+            ] })
           ] }),
           new TableRow({ children: [
-            new TableCell({ children: [ new Paragraph('Photo 2'), Media.addImage(new Document(), buffer2, 200, 300) ] })
+            new TableCell({ children: [
+              new Paragraph('Photo 2'),
+              Media.addImage(doc, buffer2, 200, 300)
+            ] })
           ] })
-        ]
-      });
-      const doc = new Document({ sections: [{ children: [table] }] });
+        ] });
 
-      // Générer et télécharger
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, 'photos.docx');
+        // Créer document Word avec le tableau en section
+        const doc = new Document({ sections: [{ children: [table] }] });
+
+        // Générer et télécharger
+        const blob = await Packer.toBlob(doc);
+        saveAs(blob, 'photos.docx');
+      } catch (err) {
+        console.error(err);
+        alert('Erreur lors de la génération du document : ' + err.message);
+      }
     });
   </script>
 </body>
