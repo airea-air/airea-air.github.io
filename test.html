@@ -55,10 +55,7 @@
     }
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
-      // Créer document Word
-      const doc = new Document({ sections: [{ children: [] }] });
-
-      // Convertir DataURLs en ArrayBuffer
+      // Préparer le buffer des images
       async function fetchBuffer(dataURL) {
         const res = await fetch(dataURL);
         return res.arrayBuffer();
@@ -66,21 +63,21 @@
       const buffer1 = await fetchBuffer(dataURL1);
       const buffer2 = await fetchBuffer(dataURL2);
 
-      // Ajouter table à 2 lignes 1 colonne, chaque cellule contient paragraphe+image
-      const rows = [
-        new TableRow({ children: [
-          new TableCell({ children: [ new Paragraph('Photo 1'), Media.addImage(doc, buffer1, 200, 300) ] })
-        ] }),
-        new TableRow({ children: [
-          new TableCell({ children: [ new Paragraph('Photo 2'), Media.addImage(doc, buffer2, 200, 300) ] })
-        ] })
-      ];
-      const table = new Table({ rows });
-      doc.addSection({ children: [ table ] });
+      // Créer document Word avec tableau contenant les images
+      const table = new Table({
+        rows: [
+          new TableRow({ children: [
+            new TableCell({ children: [ new Paragraph('Photo 1'), Media.addImage(new Document(), buffer1, 200, 300) ] })
+          ] }),
+          new TableRow({ children: [
+            new TableCell({ children: [ new Paragraph('Photo 2'), Media.addImage(new Document(), buffer2, 200, 300) ] })
+          ] })
+        ]
+      });
+      const doc = new Document({ sections: [{ children: [table] }] });
 
       // Générer et télécharger
-      const packer = new Packer();
-      const blob = await packer.toBlob(doc);
+      const blob = await Packer.toBlob(doc);
       saveAs(blob, 'photos.docx');
     });
   </script>
