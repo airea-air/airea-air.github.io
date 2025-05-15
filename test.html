@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capture Photos & Export XLSX</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    button { margin: 10px 0; padding: 10px 20px; font-size: 16px; }
+    img { display: block; margin: 10px 0; max-width: 200px; }
+  </style>
+</head>
+<body>
+  <h1>Capture de deux photos et export XLSX</h1>
+
+  <button id="btnPhoto1">Prendre photo 1</button>
+  <input type="file" id="inputPhoto1" accept="image/*" capture="environment" style="display:none">
+  <img id="preview1" alt="Aperçu Photo 1">
+
+  <button id="btnPhoto2">Prendre photo 2</button>
+  <input type="file" id="inputPhoto2" accept="image/*" capture="environment" style="display:none">
+  <img id="preview2" alt="Aperçu Photo 2">
+
+  <button id="exportBtn" disabled>Exporter XLSX</button>
+
+  <!-- Librairies ExcelJS et FileSaver -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+  <script>
+    let dataURL1 = null;
+    let dataURL2 = null;
+
+    document.getElementById('btnPhoto1').onclick = () => document.getElementById('inputPhoto1').click();
+    document.getElementById('btnPhoto2').onclick = () => document.getElementById('inputPhoto2').click();
+
+    document.getElementById('inputPhoto1').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        dataURL1 = evt.target.result;
+        document.getElementById('preview1').src = dataURL1;
+        checkReady();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('inputPhoto2').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        dataURL2 = evt.target.result;
+        document.getElementById('preview2').src = dataURL2;
+        checkReady();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function checkReady() {
+      document.getElementById('exportBtn').disabled = !(dataURL1 && dataURL2);
+    }
+
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Photos');
+
+      // Ajuster dimensions
+      worksheet.getColumn(1).width = 30;
+      worksheet.getColumn(2).width = 30;
+      worksheet.getRow(1).height = 120;
+      worksheet.getRow(2).height = 120;
+
+      // Ajouter images
+      const imgId1 = workbook.addImage({ base64: dataURL1, extension: 'png' });
+      const imgId2 = workbook.addImage({ base64: dataURL2, extension: 'png' });
+
+      worksheet.addImage(imgId1, { tl: { col: 0, row: 0 }, ext: { width: 150, height: 200 } });
+      worksheet.addImage(imgId2, { tl: { col: 1, row: 1 }, ext: { width: 150, height: 200 } });
+
+      // Générer et télécharger
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/octet-stream' });
+      saveAs(blob, 'photos.xlsx');
+    });
+  </script>
+</body>
+</html>
