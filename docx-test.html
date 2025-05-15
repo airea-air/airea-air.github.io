@@ -5,107 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Capture Photos & Export DOCX</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    button { margin: 10px 0; padding: 10px 20px; font-size: 16px; }
-    img { display: block; margin: 10px 0; max-width: 200px; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    button { margin: 10px 0; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    img { display: block; margin: 10px 0; max-width: 100%; height: auto; border: 1px solid #ccc; }
+    table { width: 100%; margin-top: 20px; }
+    td { text-align: center; }
   </style>
 </head>
 <body>
   <h1>Capture de deux photos et export DOCX</h1>
 
-  <button id="btnPhoto1">Prendre photo 1</button>
+  <button id="btnPhoto1">Prendre Photo 1</button>
   <input type="file" id="inputPhoto1" accept="image/*" capture="environment" style="display:none">
   <img id="preview1" alt="Aperçu Photo 1">
 
-  <button id="btnPhoto2">Prendre photo 2</button>
+  <button id="btnPhoto2">Prendre Photo 2</button>
   <input type="file" id="inputPhoto2" accept="image/*" capture="environment" style="display:none">
   <img id="preview2" alt="Aperçu Photo 2">
 
   <button id="exportBtn" disabled>Exporter DOCX</button>
 
-  <!-- Librairies docx, FileSaver et exif-js -->
-  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+  <!-- Librairies : blueimp-load-image, docx, FileSaver -->
+  <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.2.0/build/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+
   <script>
     const { Document, Packer, Paragraph, Table, TableRow, TableCell, ImageRun } = window.docx;
-    let filesData = [{ dataURL: null, orientation: 1 }, { dataURL: null, orientation: 1 }];
+    const imagesData = [{}, {}];
 
-    // Gestion des boutons et input
-    btn => btn.addEventListener && (() => {});
+    // Setup buttons
     document.getElementById('btnPhoto1').onclick = () => inputPhoto1.click();
     document.getElementById('btnPhoto2').onclick = () => inputPhoto2.click();
-    inputPhoto1.addEventListener('change', e => loadFile(e, 0));
-    inputPhoto2.addEventListener('change', e => loadFile(e, 1));
 
-    function loadFile(e, idx) {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ({ target }) => {
-        filesData[idx].dataURL = target.result;
-        EXIF.getData(file, function() {
-          filesData[idx].orientation = EXIF.getTag(this, 'Orientation') || 1;
-          document.getElementById('preview' + (idx+1)).src = filesData[idx].dataURL;
-          exportBtn.disabled = !(filesData[0].dataURL && filesData[1].dataURL);
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-
-    // Retourne { buffer, width, height } normalisé
-    async function normalizeAndBuffer(dataURL, orientation) {
-      return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-          let w = img.width, h = img.height;
-          if (orientation >= 5 && orientation <= 8) [w, h] = [h, w];
-
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d');
-
-          // Appliquer rotation
-          switch (orientation) {
-            case 2: ctx.translate(w, 0); ctx.scale(-1,1); break;
-            case 3: ctx.translate(w, h); ctx.rotate(Math.PI); break;
-            case 4: ctx.translate(0, h); ctx.scale(1,-1); break;
-            case 5: ctx.rotate(0.5*Math.PI); ctx.scale(1,-1); break;
-            case 6: ctx.rotate(0.5*Math.PI); ctx.translate(0, -h); break;
-            case 7: ctx.rotate(1.5*Math.PI); ctx.scale(1,-1); break;
-            case 8: ctx.rotate(1.5*Math.PI); ctx.translate(-w, 0); break;
-          }
-          ctx.drawImage(img, 0, 0, img.width, img.height);
-
-          canvas.toBlob(blob => {
+    // Handle file selection and normalization
+    async function processFile(file, index) {
+      return new Promise((resolve, reject) => {
+        loadImage(
+          file,
+          async canvas => {
+            // canvas is correctly oriented
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
             const fr = new FileReader();
-            fr.onload = () => resolve({ buffer: fr.result, width: canvas.width, height: canvas.height });
+            fr.onload = () => {
+              const buffer = fr.result;
+              const width = canvas.width;
+              const height = canvas.height;
+              resolve({ buffer, width, height, dataURL: canvas.toDataURL('image/png') });
+            };
+            fr.onerror = reject;
             fr.readAsArrayBuffer(blob);
-          }, 'image/png');
-        };
-        img.src = dataURL;
+          },
+          { orientation: true, canvas: true }
+        );
       });
     }
 
+    // File input listeners
+    inputPhoto1.addEventListener('change', async e => {
+      if (e.target.files.length === 0) return;
+      imagesData[0] = await processFile(e.target.files[0], 0);
+      preview1.src = imagesData[0].dataURL;
+      exportBtn.disabled = !(imagesData[0].buffer && imagesData[1].buffer);
+    });
+
+    inputPhoto2.addEventListener('change', async e => {
+      if (e.target.files.length === 0) return;
+      imagesData[1] = await processFile(e.target.files[0], 1);
+      preview2.src = imagesData[1].dataURL;
+      exportBtn.disabled = !(imagesData[0].buffer && imagesData[1].buffer);
+    });
+
+    // Export DOCX
     exportBtn.addEventListener('click', async () => {
       try {
-        // Normalisation des deux images
-        const norm1 = await normalizeAndBuffer(filesData[0].dataURL, filesData[0].orientation);
-        const norm2 = await normalizeAndBuffer(filesData[1].dataURL, filesData[1].orientation);
+        // Build table rows with images
+        const rows = imagesData.map((img, i) => new TableRow({
+          children: [
+            new TableCell({ children: [
+              new Paragraph(`Photo ${i + 1}`),
+              new Paragraph({ children: [
+                new ImageRun({ data: img.buffer, transformation: { width: img.width * 0.5, height: img.height * 0.5 } })
+              ] })
+            ] })
+          ]
+        }));
 
-        // Construire tableau Word
-        const rows = [
-          new TableRow({ children: [ new TableCell({ children: [ new Paragraph('Photo 1'), new Paragraph({ children: [ new ImageRun({ data: norm1.buffer, transformation: { width: norm1.width, height: norm1.height } }) ] }) ] }) ] }),
-          new TableRow({ children: [ new TableCell({ children: [ new Paragraph('Photo 2'), new Paragraph({ children: [ new ImageRun({ data: norm2.buffer, transformation: { width: norm2.width, height: norm2.height } }) ] }) ] }) ] })
-        ];
         const table = new Table({ rows });
         const doc = new Document({ sections: [{ children: [table] }] });
-
-        // Exporter
         const blob = await Packer.toBlob(doc);
         saveAs(blob, 'photos.docx');
       } catch (err) {
         console.error(err);
-        alert('Erreur: ' + err.message);
+        alert('Erreur lors de l’export : ' + err.message);
       }
     });
   </script>
