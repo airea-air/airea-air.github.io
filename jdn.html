@@ -5,7 +5,7 @@
   <title>Airea | Jury de nez</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <!-- Font-Awesome 6 -->
+  <!-- Font-Awesome 6 Free -->
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-p+6FUKn8zlF4OFklJ0ncP1BohUNRH/Rdzh1s5aZ/L9ZZSPgk/Vxmjc+XhHzs+o3rRjRA3SWcCiUz6P2e7Z8U9Q=="
@@ -26,7 +26,6 @@
     header h1 { margin: 0; font-size: 1.2rem; }
     main { padding: 0.5rem 1rem; }
 
-    /* grille 2 colonnes pour tous les champs */
     .grid2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -35,7 +34,6 @@
     }
     label { display: block; font-size: .85rem; }
 
-    /* styles partagés pour select, input et button */
     select,
     input[type="time"],
     input[type="number"],
@@ -53,19 +51,21 @@
       color: #333;
     }
 
-    /* bouton Réinitialiser légèrement grisé */
+    /* Bouton Réinitialiser légèrement grisé */
     #new {
       background: #f0f0f0;
       cursor: pointer;
     }
 
-    /* textarea spécifique */
+    /* Forcer la police Font Awesome Solid sur l’icône */
+    button i {
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      margin-left: .4rem;
+    }
+
     textarea { height: 3rem; }
 
-    /* espacement icône */
-    button i { margin-left: .4rem; }
-
-    /* footer */
     footer {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: #3f51b5;
@@ -84,7 +84,6 @@
     #add      { background: #757575; }
     #download { background: #e53935; }
 
-    /* notes rows (inchangées) */
     #notes .note-row {
       display: flex; align-items: center; padding: .3rem;
       gap: .3rem; border-radius: 4px; margin-bottom: .2rem;
@@ -110,17 +109,16 @@
   </header>
 
   <main>
-
-    <!-- Configuration -->
+    <!-- Point de mesure / Réinitialiser -->
     <div class="grid2">
       <div>
-        <label for="point">Point de mesure :</label>
+        <label for="point">Point de mesure</label>
         <select id="point"></select>
       </div>
       <div>
-        <label for="new">Nouvelle mesure :</label>
+        <label for="new">Réinitialiser</label>
         <button id="new">
-          Réinitialiser <i class="fa-solid fa-rotate-right"></i>
+          Réinitialiser <i class="fa-solid fa-redo"></i>
         </button>
       </div>
     </div>
@@ -128,11 +126,11 @@
     <!-- Session / Heure -->
     <div class="grid2">
       <div>
-        <label for="session">Session :</label>
+        <label for="session">Session</label>
         <select id="session"><option>AM</option><option>PM</option></select>
       </div>
       <div>
-        <label for="heure">Heure :</label>
+        <label for="heure">Heure</label>
         <input type="time" id="heure">
       </div>
     </div>
@@ -140,11 +138,11 @@
     <!-- Vent -->
     <div class="grid2">
       <div>
-        <label for="ventDir">Direction du vent :</label>
+        <label for="ventDir">Direction du vent</label>
         <input type="text" id="ventDir">
       </div>
       <div>
-        <label for="ventVit">Vitesse du vent (m/s) :</label>
+        <label for="ventVit">Vitesse du vent (m/s)</label>
         <input type="number" id="ventVit" min="0" step="0.1">
       </div>
     </div>
@@ -155,7 +153,6 @@
     <!-- Commentaires -->
     <label for="commentaire">Commentaires :</label>
     <textarea id="commentaire"></textarea>
-
   </main>
 
   <footer>
@@ -164,159 +161,160 @@
   </footer>
 
   <script>
-  // stockage sous forme de map point_session → row
-  let dataMap = JSON.parse(localStorage.getItem('mesuresMap') || '{}');
-  let saved   = true;
+    // stockage sous forme de map point_session → row
+    let dataMap = JSON.parse(localStorage.getItem('mesuresMap') || '{}');
+    let saved   = true;
 
-  const pointSel   = document.getElementById('point');
-  const sessionSel = document.getElementById('session');
-  const jurySel    = document.getElementById('jury');
-  const addBtn     = document.getElementById('add');
+    const pointSel   = document.getElementById('point');
+    const sessionSel = document.getElementById('session');
+    const jurySel    = document.getElementById('jury');
+    const addBtn     = document.getElementById('add');
 
-  // charger/sauver jury
-  const savedJury = localStorage.getItem('selectedJury');
-  if (savedJury) jurySel.value = savedJury;
-  jurySel.addEventListener('change', () => {
-    localStorage.setItem('selectedJury', jurySel.value);
-  });
+    // Charger/sauver jury
+    const savedJury = localStorage.getItem('selectedJury');
+    if (savedJury) jurySel.value = savedJury;
+    jurySel.addEventListener('change', () => {
+      localStorage.setItem('selectedJury', jurySel.value);
+    });
 
-  // remplir points P1–P20
-  for (let i = 1; i <= 20; i++) {
-    const o = document.createElement('option');
-    o.value = o.textContent = 'P' + i;
-    pointSel.appendChild(o);
-  }
-
-  // catégories & couleurs
-  const categories = [
-    { nom:'Nature (A)',      code:'A', bg:'#a8e6cf' },
-    { nom:'Routier (B)',     code:'B', bg:'#cfd8dc' },
-    { nom:'Agriculture (C)', code:'C', bg:'#d7ccc8' },
-    { nom:'Méthaniseur (D)', code:'D', bg:'#ff8a80' },
-    { nom:'Cuisine (E)',     code:'E', bg:'#fff9c4' },
-    { nom:'Déchets (F)',     code:'F', bg:'#f8bbd0' },
-    { nom:'Eaux usées (G)',  code:'G', bg:'#b2ebf2' },
-    { nom:'Fumée (H)',       code:'H', bg:'#cfd8dc' },
-    { nom:'Industrie (I)',   code:'I', bg:'#ffccbc' },
-    { nom:'Autre (J)',       code:'J', bg:'#ffe082' },
-  ];
-  const notesDiv = document.getElementById('notes');
-  categories.forEach(cat => {
-    const row = document.createElement('div');
-    row.className = 'note-row';
-    row.style.background = cat.bg;
-    row.innerHTML = `
-      <div class="title"><strong>${cat.nom}</strong></div>
-      <label>Continu
-        <select id="cont_${cat.code}">
-          ${[...Array(13)].map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
-        </select>
-      </label>
-      <label>Bouffées
-        <select id="bouf_${cat.code}">
-          ${[...Array(13)].map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
-        </select>
-      </label>`;
-    notesDiv.appendChild(row);
-  });
-
-  const $val = id => document.getElementById(id).value;
-  function saveMap()    { localStorage.setItem('mesuresMap', JSON.stringify(dataMap)); }
-  function getNowHM()   { return new Date().toTimeString().slice(0,5); }
-  function updateAddLabel() {
-    addBtn.textContent = dataMap[`${pointSel.value}_${sessionSel.value}`]
-      ? `Mettre à jour ${pointSel.value}`
-      : `Ajout des données de ${pointSel.value}`;
-  }
-  function markDirty() { saved = false; }
-
-  function loadIfExists() {
-    const key = `${pointSel.value}_${sessionSel.value}`;
-    if (dataMap[key]) {
-      const r = dataMap[key];
-      document.getElementById('heure').value   = r[2];
-      document.getElementById('ventDir').value = r[3];
-      document.getElementById('ventVit').value = r[4];
-      categories.forEach((c,i) => {
-        document.getElementById(`cont_${c.code}`).value  = r[5+2*i];
-        document.getElementById(`bouf_${c.code}`).value = r[5+2*i+1];
-      });
-      document.getElementById('commentaire').value = r[r.length-1];
-    } else {
-      resetFormFields();
+    // Remplir points P1–P20
+    for (let i = 1; i <= 20; i++) {
+      const o = document.createElement('option');
+      o.value = o.textContent = 'P' + i;
+      pointSel.appendChild(o);
     }
-    updateAddLabel();
-    saved = true;
-  }
 
-  function resetFormFields() {
-    sessionSel.value = 'AM';
-    document.getElementById('heure').value   = getNowHM();
-    document.getElementById('ventDir').value = '';
-    document.getElementById('ventVit').value = '0';
-    categories.forEach(c => {
-      document.getElementById(`cont_${c.code}`).value  = '0.0';
-      document.getElementById(`bouf_${c.code}`).value = '0.0';
-    });
-    document.getElementById('commentaire').value = '';
-  }
-
-  function resetForm() {
-    if (!saved && !confirm("As-tu bien enregistré la mesure en cours ?")) return;
-    pointSel.value = 'P1';
-    resetFormFields();
-    saved = true;
-    updateAddLabel();
-  }
-
-  window.addEventListener('load', () => {
-    resetForm();
-    loadIfExists();
-  });
-  [ pointSel, sessionSel ].forEach(el => {
-    el.addEventListener('change', () => { loadIfExists(); markDirty(); });
-  });
-  document.querySelectorAll('select,input,textarea').forEach(el => {
-    el.addEventListener('input', markDirty);
-    el.addEventListener('change', markDirty);
-  });
-  document.getElementById('new').onclick = resetForm;
-
-  addBtn.onclick = () => {
-    const key = `${pointSel.value}_${sessionSel.value}`;
-    const row = [
-      $val('point'), $val('session'), $val('heure'),
-      $val('ventDir'), $val('ventVit'),
-      ...categories.flatMap(c => [$val(`cont_${c.code}`), $val(`bouf_${c.code}`)]),
-      document.getElementById('commentaire').value.trim()
+    // Catégories & couleurs
+    const categories = [
+      { nom:'Nature (A)',      code:'A', bg:'#a8e6cf' },
+      { nom:'Routier (B)',     code:'B', bg:'#cfd8dc' },
+      { nom:'Agriculture (C)', code:'C', bg:'#d7ccc8' },
+      { nom:'Méthaniseur (D)', code:'D', bg:'#ff8a80' },
+      { nom:'Cuisine (E)',     code:'E', bg:'#fff9c4' },
+      { nom:'Déchets (F)',     code:'F', bg:'#f8bbd0' },
+      { nom:'Eaux usées (G)',  code:'G', bg:'#b2ebf2' },
+      { nom:'Fumée (H)',       code:'H', bg:'#cfd8dc' },
+      { nom:'Industrie (I)',   code:'I', bg:'#ffccbc' },
+      { nom:'Autre (J)',       code:'J', bg:'#ffe082' },
     ];
-    dataMap[key] = row;
-    saveMap();
-    saved = true;
-    alert('Mesure enregistrée');
-    updateAddLabel();
-  };
-
-  document.getElementById('download').onclick = () => {
-    const keys = Object.keys(dataMap).sort((a,b) => {
-      const nA = +a.split('_')[0].slice(1);
-      const nB = +b.split('_')[0].slice(1);
-      return nA - nB || a.localeCompare(b);
+    const notesDiv = document.getElementById('notes');
+    categories.forEach(cat => {
+      const row = document.createElement('div');
+      row.className = 'note-row';
+      row.style.background = cat.bg;
+      row.innerHTML = `
+        <div class="title"><strong>${cat.nom}</strong></div>
+        <label>Continu
+          <select id="cont_${cat.code}">
+            ${[...Array(13)].map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
+          </select>
+        </label>
+        <label>Bouffées
+          <select id="bouf_${cat.code}">
+            ${[...Array(13)].map((_,i)=>`<option>${(i*0.5).toFixed(1)}</option>`).join('')}
+          </select>
+        </label>`;
+      notesDiv.appendChild(row);
     });
-    if (!keys.length) return alert('Aucune donnée à exporter');
-    const rows = keys.map(k => dataMap[k]);
-    const headerRow = [
-      'Point','Session','Heure','DirectionVent','VitesseVent',
-      ...categories.flatMap(c=>[`Intensite_${c.code}_continu`,`Intensite_${c.code}_bousee`]),
-      'Commentaire'
-    ];
-    const aoa = [ headerRow, ...rows ];
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Mesures');
-    XLSX.writeFile(wb, `JDN_${jurySel.value}.xlsx`);
-    resetForm();
-  };
+
+    const $val = id => document.getElementById(id).value;
+
+    function saveMap()    { localStorage.setItem('mesuresMap', JSON.stringify(dataMap)); }
+    function getNowHM()   { return new Date().toTimeString().slice(0,5); }
+    function updateAddLabel() {
+      addBtn.textContent = dataMap[`${pointSel.value}_${sessionSel.value}`]
+        ? `Mettre à jour ${pointSel.value}`
+        : `Ajout des données de ${pointSel.value}`;
+    }
+    function markDirty() { saved = false; }
+
+    function loadIfExists() {
+      const key = `${pointSel.value}_${sessionSel.value}`;
+      if (dataMap[key]) {
+        const r = dataMap[key];
+        document.getElementById('heure').value   = r[2];
+        document.getElementById('ventDir').value = r[3];
+        document.getElementById('ventVit').value = r[4];
+        categories.forEach((c,i) => {
+          document.getElementById(`cont_${c.code}`).value  = r[5+2*i];
+          document.getElementById(`bouf_${c.code}`).value = r[5+2*i+1];
+        });
+        document.getElementById('commentaire').value = r[r.length-1];
+      } else {
+        resetFormFields();
+      }
+      updateAddLabel();
+      saved = true;
+    }
+
+    function resetFormFields() {
+      sessionSel.value = 'AM';
+      document.getElementById('heure').value   = getNowHM();
+      document.getElementById('ventDir').value = '';
+      document.getElementById('ventVit').value = '0';
+      categories.forEach(c => {
+        document.getElementById(`cont_${c.code}`).value  = '0.0';
+        document.getElementById(`bouf_${c.code}`).value = '0.0';
+      });
+      document.getElementById('commentaire').value = '';
+    }
+
+    function resetForm() {
+      if (!saved && !confirm("As-tu bien enregistré la mesure en cours ?")) return;
+      pointSel.value = 'P1';
+      resetFormFields();
+      saved = true;
+      updateAddLabel();
+    }
+
+    window.addEventListener('load', () => {
+      resetForm();
+      loadIfExists();
+    });
+    [ pointSel, sessionSel ].forEach(el => {
+      el.addEventListener('change', () => { loadIfExists(); markDirty(); });
+    });
+    document.querySelectorAll('select,input,textarea').forEach(el => {
+      el.addEventListener('input', markDirty);
+      el.addEventListener('change', markDirty);
+    });
+    document.getElementById('new').onclick = resetForm;
+
+    addBtn.onclick = () => {
+      const key = `${pointSel.value}_${sessionSel.value}`;
+      const row = [
+        $val('point'), $val('session'), $val('heure'),
+        $val('ventDir'), $val('ventVit'),
+        ...categories.flatMap(c => [$val(`cont_${c.code}`), $val(`bouf_${c.code}`)]),
+        document.getElementById('commentaire').value.trim()
+      ];
+      dataMap[key] = row;
+      saveMap();
+      saved = true;
+      alert('Mesure enregistrée');
+      updateAddLabel();
+    };
+
+    document.getElementById('download').onclick = () => {
+      const keys = Object.keys(dataMap).sort((a,b) => {
+        const nA = +a.split('_')[0].slice(1);
+        const nB = +b.split('_')[0].slice(1);
+        return nA - nB || a.localeCompare(b);
+      });
+      if (!keys.length) return alert('Aucune donnée à exporter');
+      const rows = keys.map(k => dataMap[k]);
+      const headerRow = [
+        'Point','Session','Heure','DirectionVent','VitesseVent',
+        ...categories.flatMap(c=>[`Intensite_${c.code}_continu`,`Intensite_${c.code}_bousee`]),
+        'Commentaire'
+      ];
+      const aoa = [ headerRow, ...rows ];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Mesures');
+      XLSX.writeFile(wb, `JDN_${jurySel.value}.xlsx`);
+      resetForm();
+    };
   </script>
 
 </body>
