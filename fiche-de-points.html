@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-  <title>Airea | Fiche de points de mesure</title>
+  <title>Airea – Fiche de points de mesure</title>
   <style>
     :root {
       --airea-blue: #005fa1;
@@ -32,6 +32,7 @@
       display:flex; justify-content:space-between; align-items:center;
       background:var(--airea-blue); color:#fff;
       padding:0.4rem 1rem;
+      /* plus de coins arrondis */
     }
     header h1 {
       margin:0;
@@ -74,9 +75,10 @@
       margin-bottom:1rem;
     }
 
-    #address {}
+    /* Adresse en pleine largeur */
+    #address { }
 
-    /* Coordonnées Lat/Lng en 50/50 dans un grid */
+    /* grid Coordonnées Lat/Lng en 50/50 */
     .coords {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -85,7 +87,7 @@
       margin-bottom:1rem;
     }
 
-    /* Grid Photos */
+    /* grid Photos */
     .photos {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -110,7 +112,7 @@
       display:block;
     }
 
-    /* Grid N° de capteurs */
+    /* grid Capteurs pleine largeur */
     .sensors {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -129,6 +131,7 @@
       padding:0 .5rem;
       border-top:1px solid var(--airea-border);
       background:#f9f9f9;
+      /* plus de coins arrondis */
     }
     .footer button {
       flex:1;
@@ -167,12 +170,12 @@
           </select>
         </div>
 
-        <!-- Géolocalisation -->
+        <!-- Géoloc -->
         <div class="row">
-          <button type="button" id="btnGeo">Géolocalisation</button>
+          <button type="button" id="btnGeo">Obtenir adresse & coordonnées</button>
         </div>
 
-        <!-- Adresse -->
+        <!-- Adresse pleine largeur -->
         <div class="row">
           <label for="address">Adresse</label>
           <input id="address" type="text" readonly>
@@ -261,6 +264,12 @@
         pointSelect.add(new Option(`P${i}`, `P${i}`));
       }
 
+      // Met à jour le texte du bouton Enregistrer selon le point sélectionné
+      pointSelect.addEventListener('change', () => {
+        const pt = pointSelect.value;
+        btnSave.textContent = pt ? `Enregistrer ${pt}` : 'Enregistrer';
+      });
+
       // Date/heure par défaut
       function nowLocal() {
         const d = new Date();
@@ -270,7 +279,7 @@
       }
       datetimeEl.value = nowLocal();
 
-      // Latitude et longitude au format DMS
+      // DMS
       const toDMS = v => {
         const deg = Math.floor(v),
               min = Math.floor((v - deg)*60),
@@ -278,7 +287,7 @@
         return `${deg}°${min}'${sec}"`;
       };
 
-      // Géolocalisation
+      // Géoloc
       btnGeo.addEventListener('click', () => {
         if (!navigator.geolocation) return alert("Géoloc non supportée");
         navigator.geolocation.getCurrentPosition(async pos => {
@@ -304,45 +313,29 @@
             const img = new Image();
             img.src = fr.result;
             await img.decode();
-
             EXIF.getData(file, function() {
-              const orientation = EXIF.getTag(this, 'Orientation') || 1;
+              const orientation = EXIF.getTag(this, 'Orientation')||1;
               const pxPerCm = 96/2.54,
-                    cw = Math.round(5.25 * pxPerCm),
-                    ch = Math.round(7    * pxPerCm);
-              const c = document.createElement('canvas');
-              const ctx = c.getContext('2d');
-              c.width = cw;
-              c.height = ch;
-
+                    cw = Math.round(5.25*pxPerCm),
+                    ch = Math.round(7*pxPerCm);
+              const c = document.createElement('canvas'),
+                    ctx = c.getContext('2d');
+              c.width = cw; c.height = ch;
               switch (orientation) {
-                case 6:
-                  ctx.translate(cw, 0);
-                  ctx.rotate(Math.PI/2);
-                  break;
-                case 8:
-                  ctx.translate(0, ch);
-                  ctx.rotate(-Math.PI/2);
-                  break;
-                case 3:
-                  ctx.translate(cw, ch);
-                  ctx.rotate(Math.PI);
-                  break;
+                case 6: ctx.translate(cw,0); ctx.rotate(Math.PI/2); break;
+                case 8: ctx.translate(0,ch); ctx.rotate(-Math.PI/2); break;
+                case 3: ctx.translate(cw,ch); ctx.rotate(Math.PI); break;
               }
-
               let imgW = img.width, imgH = img.height;
-              if ([6,8].includes(orientation)) {
-                [imgW, imgH] = [img.height, img.width];
-              }
-              const scale = Math.max(cw / imgW, ch / imgH);
-              const dw = img.width * scale;
-              const dh = img.height * scale;
-              const dx = (cw - dw) / 2;
-              const dy = (ch - dh) / 2;
-
+              if ([6,8].includes(orientation)) [imgW,imgH] = [img.height,img.width];
+              const scale = Math.max(cw/imgW, ch/imgH),
+                    dw = img.width*scale,
+                    dh = img.height*scale,
+                    dx = (cw-dw)/2,
+                    dy = (ch-dh)/2;
               ctx.drawImage(img, dx, dy, dw, dh);
               btn.classList.add('filled');
-              res(c.toDataURL('image/jpeg', 0.9).split(',')[1]);
+              res(c.toDataURL('image/jpeg',0.9).split(',')[1]);
             });
           };
           fr.readAsDataURL(file);
@@ -359,7 +352,7 @@
         transformImageCover(photo2.files[0], photo2Btn).then(b64 => lastB64_2 = b64)
       );
 
-      // Enregistrement local
+      // Enregistrement local et remise à zéro du formulaire
       btnSave.addEventListener('click', () => {
         const key = pointSelect.value || `P${Object.keys(points).length+1}`;
         points[key] = {
@@ -374,6 +367,22 @@
           b64_2:   lastB64_2
         };
         alert(`Données ${key} enregistrées !`);
+
+        // Remise à zéro du formulaire pour pouvoir saisir le point suivant
+        addressEl.value = '';
+        latEl.value = '';
+        lngEl.value = '';
+        no2El.value = '';
+        c6h6El.value = '';
+        pm10El.value = '';
+        datetimeEl.value = nowLocal();
+        photo1Btn.classList.remove('filled');
+        photo2Btn.classList.remove('filled');
+        lastB64_1 = lastB64_2 = null;
+
+        // Remettre le select à vide et le bouton à l'état initial
+        pointSelect.value = '';
+        btnSave.textContent = 'Enregistrer';
       });
 
       // Export XLSX
@@ -420,6 +429,7 @@
         }
         const buf = await wb.xlsx.writeBuffer();
         saveAs(new Blob([buf],{type:'application/octet-stream'}), filename);
+        // vider les données en mémoire et recharger
         Object.keys(points).forEach(k=>delete points[k]);
         location.reload();
       });
