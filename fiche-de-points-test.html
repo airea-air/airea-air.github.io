@@ -233,26 +233,49 @@
       }, e=> showErrors([`Erreur position : ${e.message}`]));
     });
 
-    // fetch satellite static map portrait 7x5.25 cm
-    async function fetchSat(lat, lon){
-      // dimensions px pour 7cm x 5.25cm à 96dpi
-      const w = Math.round(5.25*96/2.54), h = Math.round(7*96/2.54);
-      // zoom approximé pour ~500m vue de rayon
-      const zoom = 16;
+
+    // capture satellite sans liseré, haute rés. et zoom plus élevé
+    async function fetchSat(lat, lon) {
+      // taille portrait en cm → px @96dpi
+      const targetW = Math.round(5.25 * 96 / 2.54);  // ≃198px
+      const targetH = Math.round(7    * 96 / 2.54);  // ≃265px
+    
+      // On demande le double de la hauteur pour recadrer le bas
+      const reqW = targetW;
+      const reqH = targetH * 2;
+    
+      // zoom plus fort (≈250m de rayon)
+      const zoom = 17;
+    
       const url = `https://maps.googleapis.com/maps/api/staticmap`
-        + `?center=${lat},${lon}`
-        + `&zoom=${zoom}`
-        + `&size=${w}x${h}`
-        + `&maptype=satellite`
-        + `&key=AIzaSyC03CVSGX4tnkJrsluCfJP0x9p3ZKHWT1Q`;
+                + `?center=${lat},${lon}`
+                + `&zoom=${zoom}`
+                + `&size=${reqW}x${reqH}`
+                + `&maptype=satellite`
+                + `&key=YOUR_API_KEY`;
+    
       const img = new Image();
       img.crossOrigin = 'Anonymous';
       img.src = url;
       await img.decode();
-      // dessiner dans canvas portrait
-      const c=document.createElement('canvas');
-      c.width=w; c.height=h;
-      c.getContext('2d').drawImage(img,0,0,w,h);
+    
+      // on dessine dans un canvas plus grand…
+      const c = document.createElement('canvas');
+      c.width  = targetW;
+      c.height = targetH;
+      const ctx = c.getContext('2d');
+    
+      // on recadre : on copie la partie haute de l’image (targetH px)
+      // et on ignore le bas (où Google met son bandeau)
+      ctx.drawImage(
+        img,
+        0, 0,             // départ dans l’image source
+        reqW, targetH,    // largeur x hauteur à prendre (juste le haut)
+        0, 0,             // où placer dans le canvas de sortie
+        targetW, targetH  // à quelle taille l’étirer (1:1 ici)
+      );
+    
+      // on retourne le base64 sans le liseré
       return c.toDataURL('image/png').split(',')[1];
     }
 
