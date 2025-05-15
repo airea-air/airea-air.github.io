@@ -15,6 +15,7 @@
       --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       --green: #28a745;
     }
+
     html, body {
       margin: 0; padding: 0;
       width:100%; height:100%;
@@ -48,26 +49,43 @@
     main {
       flex:1; padding:1rem; overflow-y:auto;
     }
-    .row {
-      margin-bottom:1rem;
-      display:flex; flex-direction:column;
-    }
-    .row label {
+
+    /* labels uniformes */
+    label {
+      display:block;
       margin-bottom:.3rem;
       font-size:var(--font-base);
-      max-width:50px;
+      font-weight:500;
+      color:#333;
     }
-    select, input[type=text],
+
+    select,
+    input[type=text],
     input[type=datetime-local],
-    input[type=number], button {
+    input[type=number],
+    button {
       padding:.6rem;
       border:1px solid var(--airea-border);
       border-radius:var(--border-radius);
       font-size:var(--font-base);
       box-shadow:var(--box-shadow);
+      width:100%;
+      box-sizing:border-box;
     }
 
-    /* 1) grid pour Photo 1 & 2 */
+    .row {
+      margin-bottom:1rem;
+    }
+
+    /* grid Coordonnées Lat/Lng */
+    .coords {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom:1rem;
+    }
+
+    /* grid Photos */
     .photos {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -80,7 +98,6 @@
       transition:background .2s,border-color .2s;
       display:flex; align-items:center; justify-content:center;
       border:1px solid var(--airea-border);
-      padding:.6rem;
     }
     .photos button .btn-check {
       position:absolute; top:.4rem; right:.4rem;
@@ -90,17 +107,21 @@
       background:var(--airea-blue); color:#fff;
       border-color:var(--airea-blue);
     }
-    .photos button.filled .btn-check { display:block; }
+    .photos button.filled .btn-check {
+      display:block;
+    }
 
-    /* 2) grid pour NO2 / C6H6 / PM10 */
+    /* grid Capteurs pleine largeur */
     .sensors {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
+      width: 100%;
       margin-bottom:1rem;
     }
     .sensors div {
-      display:flex; flex-direction:column;
+      display:flex;
+      flex-direction:column;
     }
 
     .footer {
@@ -142,7 +163,7 @@
     <main>
       <form id="pointForm" novalidate>
         <div class="row">
-          <label for="pointSelect">Point</label>
+          <label for="pointSelect">Point de mesure</label>
           <select id="pointSelect">
             <option value="">-- Choisir --</option>
           </select>
@@ -157,18 +178,17 @@
           <input id="address" readonly>
         </div>
 
-        <div class="row coords">
+        <div class="coords">
           <div>
-            <label for="latDMS">Lat</label>
+            <label for="latDMS">Latitude</label>
             <input id="latDMS" readonly>
           </div>
           <div>
-            <label for="lngDMS">Lng</label>
+            <label for="lngDMS">Longitude</label>
             <input id="lngDMS" readonly>
           </div>
         </div>
 
-        <!-- zone photos -->
         <div class="photos">
           <button type="button" id="photo1Btn">
             Photo 1<span class="btn-check">✓</span>
@@ -180,19 +200,18 @@
           <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
         </div>
 
-        <!-- zone capteurs -->
         <div class="sensors">
           <div>
             <label for="no2">NO₂</label>
-            <input id="no2" type="number" placeholder="µg/m³">
+            <input id="no2" type="number">
           </div>
           <div>
             <label for="c6h6">C₆H₆</label>
-            <input id="c6h6" type="number" placeholder="µg/m³">
+            <input id="c6h6" type="number">
           </div>
           <div>
             <label for="pm10">PM₁₀</label>
-            <input id="pm10" type="number" placeholder="µg/m³">
+            <input id="pm10" type="number">
           </div>
         </div>
 
