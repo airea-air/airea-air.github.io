@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>Airea - Fiche de points de mesure</title>
+  <style>
+    :root {
+      --airea-blue: #005fa1;
+      --airea-light: #e6f2fa;
+      --airea-border: #ccc;
+      --border-radius: .5rem;
+      --font-base: .9rem;
+      --app-max-width: 480px;
+      --box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      --green: #28a745;
+      --error-red: #d9534f;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      width:100%; height:100%;
+      overflow:hidden;
+      font-family:'Segoe UI',sans-serif;
+      background:var(--airea-light);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .app {
+      width:100%; max-width:var(--app-max-width);
+      height:100%; display:flex; flex-direction:column;
+      background:#fff; box-shadow:var(--box-shadow);
+    }
+    header {
+      display:flex; justify-content:space-between; align-items:center;
+      background:var(--airea-blue); color:#fff;
+      padding:0.4rem 1rem;
+    }
+    header h1 {
+      margin:0;
+      font-size:0.95rem;
+      font-weight:400;
+    }
+    header input {
+      width:100px; text-align:center;
+      border:none; border-radius:var(--border-radius);
+      padding:0.4rem; font-size:0.85rem;
+    }
+    main {
+      flex:1; padding:1rem; overflow-y:auto;
+    }
+    label {
+      display:block;
+      margin-bottom:.3rem;
+      font-size:var(--font-base);
+      font-weight:500;
+      color:#333;
+    }
+    select,
+    input[type=text],
+    input[type=datetime-local],
+    input[type=number],
+    button {
+      width:100%;
+      padding:.6rem;
+      border:1px solid var(--airea-border);
+      border-radius:var(--border-radius);
+      font-size:var(--font-base);
+      box-shadow:var(--box-shadow);
+      box-sizing:border-box;
+    }
+    .row {
+      margin-bottom:1rem;
+    }
+    .coords {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      width: 100%;
+      margin-bottom:1rem;
+    }
+    .photos {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom:1rem;
+    }
+    .photos button {
+      position: relative;
+      background:#fff;
+      transition:background .2s,border-color .2s;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .photos button .btn-check {
+      position:absolute; top:.4rem; right:.4rem;
+      display:none; font-size:1.2rem; color:limegreen;
+    }
+    .photos button.filled {
+      background:var(--airea-blue); color:#fff;
+      border-color:var(--airea-blue);
+    }
+    .photos button.filled .btn-check {
+      display:block;
+    }
+    .sensors {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      width: 100%;
+      margin-bottom:1rem;
+    }
+    .sensors div {
+      display:flex;
+      flex-direction:column;
+    }
+    .footer {
+      height:3.5rem;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 .5rem;
+      border-top:1px solid var(--airea-border);
+      background:#f9f9f9;
+    }
+    .footer button {
+      flex:1;
+      border:none; cursor:pointer;
+      transition:opacity .2s,transform .1s;
+      margin:0 .25rem;
+      border-radius:var(--border-radius);
+      padding:.6rem;
+      font-size:.95rem;
+      box-shadow:var(--box-shadow);
+    }
+    #savePoint {
+      background:var(--green);
+      color:#fff;
+    }
+    #exportXlsx {
+      background:var(--airea-blue);
+      color:#fff;
+    }
+    .form-error {
+      color: var(--error-red);
+      font-size: 0.85rem;
+      margin-top: -0.5rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Airea – Fiche de points de mesure</h1>
+      <input id="affaire" value="AF25XX">
+    </header>
+    <main>
+      <form id="pointForm" novalidate>
+        <div class="row">
+          <label for="pointSelect">Point de mesure</label>
+          <select id="pointSelect">
+            <option value="">-- Choisir --</option>
+          </select>
+        </div>
+        <div class="row">
+          <button type="button" id="btnGeo">Obtenir adresse & coordonnées</button>
+        </div>
+        <div class="row">
+          <label for="address">Adresse</label>
+          <input id="address" type="text" readonly>
+        </div>
+        <div class="coords">
+          <div>
+            <label for="latDMS">Latitude</label>
+            <input id="latDMS" type="text" readonly>
+          </div>
+          <div>
+            <label for="lngDMS">Longitude</label>
+            <input id="lngDMS" type="text" readonly>
+          </div>
+        </div>
+        <div class="photos">
+          <button type="button" id="photo1Btn">Photo 1<span class="btn-check">✓</span></button>
+          <button type="button" id="photo2Btn">Photo 2<span class="btn-check">✓</span></button>
+          <input type="file" id="photo1" accept="image/*" capture="environment" style="display:none">
+          <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
+        </div>
+        <div class="sensors">
+          <div>
+            <label for="no2">NO₂</label>
+            <input id="no2" type="number">
+          </div>
+          <div>
+            <label for="c6h6">C₆H₆</label>
+            <input id="c6h6" type="number">
+          </div>
+          <div>
+            <label for="pm10">PM₁₀</label>
+            <input id="pm10" type="number">
+          </div>
+        </div>
+        <div class="row">
+          <label for="datetime">Date & heure</label>
+          <input id="datetime" type="datetime-local" required>
+        </div>
+        <div id="formError" class="form-error"></div>
+      </form>
+    </main>
+    <footer class="footer">
+      <button type="button" id="savePoint">Enregistrer</button>
+      <button type="button" id="exportXlsx">Export en .xlsx</button>
+    </footer>
+  </div>
+</body>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const get = id => document.getElementById(id);
+  const pointSelect = get('pointSelect'),
+        btnGeo      = get('btnGeo'),
+        btnSave     = get('savePoint'),
+        btnExport   = get('exportXlsx'),
+        addressEl   = get('address'),
+        latEl       = get('latDMS'),
+        lngEl       = get('lngDMS'),
+        no2El       = get('no2'),
+        c6h6El      = get('c6h6'),
+        pm10El      = get('pm10'),
+        datetimeEl  = get('datetime'),
+        photo1      = get('photo1'),
+        photo2      = get('photo2'),
+        photo1Btn   = get('photo1Btn'),
+        photo2Btn   = get('photo2Btn'),
+        affaireEl   = get('affaire'),
+        errorEl     = get('formError');
+  let points = JSON.parse(localStorage.getItem('aireaPoints') || '{}');
+
+  for (let i = 1; i <= 40; i++) {
+    pointSelect.add(new Option(`P${i}`, `P${i}`));
+  }
+
+  pointSelect.addEventListener('change', () => {
+    const pt = pointSelect.value;
+    btnSave.textContent = pt ? `Enregistrer ${pt}` : 'Enregistrer';
+    errorEl.textContent = '';
+  });
+
+  function nowLocal() {
+    const d = new Date();
+    d.setSeconds(0,0);
+    const tz = d.getTimezoneOffset();
+    return new Date(d.getTime() - tz*60000).toISOString().slice(0,16);
+  }
+  datetimeEl.value = nowLocal();
+
+  const toDMS = v => {
+    const deg = Math.floor(v),
+          min = Math.floor((v - deg)*60),
+          sec = Math.round((v - deg - min/60)*3600);
+    return `${deg}°${min}'${sec}"`;
+  };
+
+  btnGeo.addEventListener('click', () => {
+    if (!navigator.geolocation) return alert("Géoloc non supportée");
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const {latitude,longitude} = pos.coords;
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+      );
+      const d = await res.json();
+      const a = d.address||{};
+      const street = `${a.house_number||''} ${a.road||''}`.trim();
+      const city = a.city||a.town||a.village||a.county||'';
+      addressEl.value = `${street}, ${city}`;
+      latEl.value = toDMS(latitude);
+      lngEl.value = toDMS(longitude);
+    }, e => alert("Erreur position : " + e.message));
+  });
+
+  async function transformImageCover(file, btn) {
+    return new Promise(res => {
+      const fr = new FileReader();
+      fr.onload = async () => {
+        const img = new Image();
+        img.src = fr.result;
+        await img.decode();
+        EXIF.getData(file, function() {
+          const orientation = EXIF.getTag(this, 'Orientation')||1;
+          const pxPerCm = 96/2.54,
+                cw = Math.round(5.25*pxPerCm),
+                ch = Math.round(7*pxPerCm);
+          const c = document.createElement('canvas'),
+                ctx = c.getContext('2d');
+          c.width = cw; c.height = ch;
+          switch (orientation) {
+            case 6: ctx.translate(cw,0); ctx.rotate(Math.PI/2); break;
+            case 8: ctx.translate(0,ch); ctx.rotate(-Math.PI/2); break;
+            case 3: ctx.translate(cw,ch); ctx.rotate(Math.PI); break;
+          }
+          let imgW = img.width, imgH = img.height;
+          if ([6,8].includes(orientation)) [imgW,imgH] = [img.height,img.width];
+          const scale = Math.max(cw/imgW, ch/imgH),
+                dw = img.width*scale,
+                dh = img.height*scale,
+                dx = (cw-dw)/2,
+                dy = (ch-dh)/2;
+          ctx.drawImage(img, dx, dy, dw, dh);
+          btn.classList.add('filled');
+          res(c.toDataURL('image/jpeg',0.9).split(',')[1]);
+        });
+      };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  photo1Btn.addEventListener('click', () => photo1.click());
+  photo2Btn.addEventListener('click', () => photo2.click());
+  let lastB64_1, lastB64_2;
+  photo1.addEventListener('change', () =>
+    transformImageCover(photo1.files[0], photo1Btn).then(b64 => lastB64_1 = b64)
+  );
+  photo2.addEventListener('change', () =>
+    transformImageCover(photo2.files[0], photo2Btn).then(b64 => lastB64_2 = b64)
+  );
+
+  btnSave.addEventListener('click', () => {
+    errorEl.textContent = '';
+    const key = pointSelect.value;
+    if (!key) return errorEl.textContent = 'Veuillez sélectionner un point.';
+    if (!datetimeEl.value) return errorEl.textContent = 'Date/heure requise.';
+    if (!no2El.value && !c6h6El.value && !pm10El.value)
+      return errorEl.textContent = 'Veuillez saisir au moins un capteur.';
+    if (!lastB64_1 || !lastB64_2)
+      return errorEl.textContent = 'Veuillez prendre les deux photos.';
+
+    points[key] = {
+      address: addressEl.value,
+      lat:     latEl.value,
+      lng:     lngEl.value,
+      no2:     no2El.value,
+      c6h6:    c6h6El.value,
+      pm10:    pm10El.value,
+      datetime:datetimeEl.value,
+      b64_1:   lastB64_1,
+      b64_2:   lastB64_2
+    };
+    localStorage.setItem('aireaPoints', JSON.stringify(points));
+    alert(`Données ${key} enregistrées !`);
+
+    addressEl.value = '';
+    latEl.value = '';
+    lngEl.value = '';
+    no2El.value = '';
+    c6h6El.value = '';
+    pm10El.value = '';
+    datetimeEl.value = nowLocal();
+    photo1Btn.classList.remove('filled');
+    photo2Btn.classList.remove('filled');
+    lastB64_1 = lastB64_2 = null;
+    pointSelect.value = '';
+    btnSave.textContent = 'Enregistrer';
+  });
+
+  btnExport.addEventListener('click', async () => {
+    if (!confirm("Tu es sûr ? Sauvegarder réinitialise l’app.")) return;
+    const affaire = affaireEl.value.trim()||'Sans_affaire';
+    const filename = `${affaire}_Fiche_de_points_de_mesure.xlsx`;
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Mesures');
+    ws.columns = [
+      {header:'Point', key:'point', width:10},
+      {header:'Adresse', key:'address', width:30},
+      {header:'Lat DMS', key:'lat', width:15},
+      {header:'Lng DMS', key:'lng', width:15},
+      {header:'Photo 1', key:'photo1', width:21.4},
+      {header:'Photo 2', key:'photo2', width:21.4},
+      {header:'NO₂', key:'no2', width:10},
+      {header:'C₆H₆', key:'c6h6', width:10},
+      {header:'PM₁₀', key:'pm10', width:10},
+      {header:'DateHeure', key:'datetime', width:20},
+    ];
+    ws.getColumn('datetime').numFmt = 'dd/mm/yy hh:mm';
+    const pxPerCm = 96/2.54,
+          imgW = Math.round(5.25 * pxPerCm),
+          imgH = Math.round(7    * pxPerCm);
+    let row = 2;
+    for (const [pt,p] of Object.entries(points)) {
+      ws.addRow({
+        point:pt, address:p.address, lat:p.lat, lng:p.lng,
+        photo1:'', photo2:'',
+        no2:p.no2, c6h6:p.c6h6, pm10:p.pm10,
+        datetime:new Date(p.datetime)
+      });
+      ws.getRow(row).height = Math.round(imgH * 0.75);
+      if (p.b64_1) {
+        const id1 = wb.addImage({ base64:p.b64_1, extension:'jpeg' });
+        ws.addImage(id1, { tl:{col:4,row:row-1}, ext:{width:imgW, height:imgH} });
+      }
+      if (p.b64_2) {
+        const id2 = wb.addImage({ base64:p.b64_2, extension:'jpeg' });
+        ws.addImage(id2, { tl:{col:5,row:row-1}, ext:{width:imgW, height:imgH} });
+      }
+      row++;
+    }
+    const buf = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buf],{type:'application/octet-stream'}), filename);
+    localStorage.removeItem('aireaPoints');
+    points = {};
+    location.reload();
+  });
+});
+</script>
+</html>
