@@ -5,7 +5,9 @@
   <title>Airea | Jury de nez</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p+6FUKn8zlF4OFklJ0ncP1BohUNRH/Rdzh1s5aZ/L9ZZSPgk/Vxmjc+XhHzs+o3rRjRA3SWcCiUz6P2e7Z8U9Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-p+6FUKn8zlF4OFklJ0ncP1BohUNRH/Rdzh1s5aZ/L9ZZSPgk/Vxmjc+XhHzs+o3rRjRA3SWcCiUz6P2e7Z8U9Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
@@ -22,18 +24,23 @@
     header h1 { margin: 0; font-size: 1.2rem; }
     main { padding: 0.5rem 1rem; }
 
-    .grid2.actions {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    /* grille 2 colonnes pour tous les champs */
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 0.5rem;
       margin-bottom: 0.5rem;
     }
-    .grid2.actions select,
-    .grid2.actions button {
-      flex: 1;
-      max-width: 200px;
-      height: 2.5rem;
+    label { display: block; font-size: .85rem; }
+
+    /* styles partagés pour select, input et button */
+    select,
+    input[type="time"],
+    input[type="number"],
+    input[type="text"],
+    textarea,
+    button {
+      width: 100%;
       padding: .4rem;
       font-size: .85rem;
       margin-top: .2rem;
@@ -43,39 +50,14 @@
       background: white;
       color: #333;
     }
-    .grid2.actions button {
-      cursor: pointer;
-      text-align: center;
-    }
-    .grid2.actions button i {
-      margin-left: .4rem;
-    }
 
-    .grid2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    label { display: block; font-size: .85rem; }
-    select, input[type="time"], input[type="number"], input[type="text"], textarea {
-      width: 100%; padding: .4rem; font-size: .85rem;
-      margin-top: .2rem; box-sizing: border-box;
-    }
-    #notes .note-row {
-      display: flex; align-items: center; padding: .3rem;
-      gap: .3rem; border-radius: 4px; margin-bottom: .2rem;
-      flex-wrap: wrap;
-    }
-    #notes .note-row > div.title {
-      flex-basis: 100%;
-    }
-    #notes .note-row > div.title strong {
-      font-size: .9rem;
-    }
-    #notes .note-row label { margin: 0; flex: 1; font-size: .8rem; }
-    #notes .note-row select { flex: 0 0 50px; padding: .2rem; font-size: .8rem; }
-    textarea { height: 3rem; font-size: .85rem; }
+    /* textarea spécifique */
+    textarea { height: 3rem; }
+
+    /* espacement icône */
+    button i { margin-left: .4rem; }
+
+    /* footer */
     footer {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: #3f51b5;
@@ -83,11 +65,27 @@
       display: flex; gap: .3rem;
     }
     footer button {
-      flex: 1; padding: .6rem; font-size: .9rem; border: none;
-      border-radius: 4px; color: white;
+      flex: 1;
+      padding: .6rem;
+      font-size: .9rem;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
     }
     #add { background: #757575; }
     #download { background: #e53935; }
+
+    /* notes rows (inchangées) */
+    #notes .note-row {
+      display: flex; align-items: center; padding: .3rem;
+      gap: .3rem; border-radius: 4px; margin-bottom: .2rem;
+      flex-wrap: wrap;
+    }
+    #notes .note-row > div.title { flex-basis: 100%; }
+    #notes .note-row > div.title strong { font-size: .9rem; }
+    #notes .note-row label { margin: 0; flex: 1; font-size: .8rem; }
+    #notes .note-row select { flex: 0 0 50px; padding: .2rem; font-size: .8rem; }
   </style>
 </head>
 <body>
@@ -105,19 +103,21 @@
 
   <main>
 
-    <div class="grid2 actions">
+    <!-- Point de mesure + Nouvelle mesure -->
+    <div class="grid2">
       <div>
         <label>Point de mesure
           <select id="point"></select>
         </label>
       </div>
-      <div style="text-align:right;">
+      <div>
         <button id="new">
           Nouvelle mesure <i class="fa-solid fa-flask"></i>
         </button>
       </div>
     </div>
 
+    <!-- Session / Heure -->
     <div class="grid2">
       <div>
         <label>Session
@@ -131,6 +131,7 @@
       </div>
     </div>
 
+    <!-- Vent -->
     <div class="grid2">
       <div>
         <label>Direction du vent
@@ -144,8 +145,10 @@
       </div>
     </div>
 
+    <!-- Notes -->
     <div id="notes"></div>
 
+    <!-- Commentaires -->
     <label>Commentaires :
       <textarea id="commentaire"></textarea>
     </label>
@@ -158,6 +161,7 @@
   </footer>
 
   <script>
+  // stockage sous forme de map point_session → row
   let dataMap = JSON.parse(localStorage.getItem('mesuresMap') || '{}');
   let saved = true;
 
@@ -166,18 +170,21 @@
   const jurySel    = document.getElementById('jury');
   const addBtn     = document.getElementById('add');
 
+  // charger/sauver jury
   const savedJury = localStorage.getItem('selectedJury');
   if (savedJury) jurySel.value = savedJury;
   jurySel.addEventListener('change', () => {
     localStorage.setItem('selectedJury', jurySel.value);
   });
-    
+
+  // remplir points P1–P20
   for (let i = 1; i <= 20; i++) {
     const o = document.createElement('option');
     o.value = o.textContent = 'P' + i;
     pointSel.appendChild(o);
   }
 
+  // catégories & couleurs
   const categories = [
     { nom:'Nature (A)',      code:'A', bg:'#a8e6cf' },
     { nom:'Routier (B)',     code:'B', bg:'#cfd8dc' },
@@ -211,8 +218,13 @@
   });
 
   const $val = id => document.getElementById(id).value;
-  function saveMap() { localStorage.setItem('mesuresMap', JSON.stringify(dataMap)); }
-  function getNowHM() { return new Date().toTimeString().slice(0,5); }
+
+  function saveMap() {
+    localStorage.setItem('mesuresMap', JSON.stringify(dataMap));
+  }
+  function getNowHM() {
+    return new Date().toTimeString().slice(0,5);
+  }
   function updateAddLabel() {
     addBtn.textContent = dataMap[`${pointSel.value}_${sessionSel.value}`]
       ? `Mettre à jour ${pointSel.value}`
