@@ -27,7 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/docx@7.2.0/build/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
   <script>
-    const { Document, Packer, Paragraph, Table, TableRow, TableCell, Media } = window.docx;
+    const { Document, Packer, Paragraph, Table, TableRow, TableCell, ImageRun } = window.docx;
     let dataURL1 = null;
     let dataURL2 = null;
 
@@ -56,7 +56,7 @@
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
       try {
-        // Créer document Word avant utilisation dans Media
+        // Créer document Word
         const doc = new Document({ sections: [{ children: [] }] });
 
         // Préparer le buffer des images
@@ -67,23 +67,23 @@
         const buffer1 = await fetchBuffer(dataURL1);
         const buffer2 = await fetchBuffer(dataURL2);
 
-        // Construire le tableau avec les images
+        // Construire le tableau avec les images dans des Paragraphs
         const table = new Table({ rows: [
           new TableRow({ children: [
             new TableCell({ children: [
               new Paragraph('Photo 1'),
-              Media.addImage(doc, buffer1, 200, 300)
+              new Paragraph({ children: [ new ImageRun({ data: buffer1, transformation: { width: 200, height: 300 } }) ] })
             ] })
           ] }),
           new TableRow({ children: [
             new TableCell({ children: [
               new Paragraph('Photo 2'),
-              Media.addImage(doc, buffer2, 200, 300)
+              new Paragraph({ children: [ new ImageRun({ data: buffer2, transformation: { width: 200, height: 300 } }) ] })
             ] })
           ] })
         ] });
 
-        // Ajouter le tableau dans une nouvelle section
+        // Ajouter le tableau dans une section
         doc.addSection({ children: [table] });
 
         // Générer et télécharger
