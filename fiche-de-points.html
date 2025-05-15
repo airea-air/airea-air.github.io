@@ -87,6 +87,7 @@
       background:#fff;
       transition:background .2s,border-color .2s;
       display:flex; align-items:center; justify-content:center;
+      border:1px solid var(--airea-border);
     }
     .btn-label { pointer-events:none; }
     .btn-check {
@@ -106,30 +107,38 @@
     .buttons {
       display:flex; justify-content:center; gap:1rem; margin-top:1rem;
     }
-    .buttons button {
-      background:var(--airea-blue); color:#fff;
-      border:none; cursor:pointer;
-      transition:opacity .2s,transform .1s;
-    }
-    .buttons button:hover { opacity:.9; }
-    .buttons button:active { transform:scale(.98); }
     footer {
       height:var(--footer-height);
       background:var(--airea-blue);
-      display:flex; align-items:center; justify-content:center;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 1rem;
       border-top-left-radius:var(--border-radius);
       border-top-right-radius:var(--border-radius);
     }
-    .export-btn {
-      width:90%; font-size:.95rem;
-      background:var(--airea-blue); color:#fff; border:none;
+    .btn-save {
+      flex:1;
+      margin-right:0.5rem;
+      background:gray;
+      color:#fff;
+      border:none;
+      padding:var(--btn-padding);
       border-radius:var(--border-radius);
-      padding:.6rem;
-      box-shadow:var(--box-shadow);
-      cursor:pointer;
-      transition:opacity .2s;
+      cursor:not-allowed;
     }
-    .export-btn:hover { opacity:.9; }
+    .btn-save.enabled {
+      background:green;
+      cursor:pointer;
+    }
+    .btn-export {
+      flex:1;
+      margin-left:0.5rem;
+      background:var(--airea-blue);
+      color:#fff;
+      border:none;
+      padding:var(--btn-padding);
+      border-radius:var(--border-radius);
+      cursor:pointer;
+    }
   </style>
 </head>
 <body>
@@ -192,15 +201,15 @@
         <div class="row sensors">
           <div>
             <label for="no2">NO₂</label>
-            <input id="no2" type="number" placeholder="µg/m³" required>
+            <input id="no2" type="number" placeholder="µg/m³">
           </div>
           <div>
             <label for="c6h6">C₆H₆</label>
-            <input id="c6h6" type="number" placeholder="µg/m³" required>
+            <input id="c6h6" type="number" placeholder="µg/m³">
           </div>
           <div>
             <label for="pm10">PM₁₀</label>
-            <input id="pm10" type="number" placeholder="µg/m³" required>
+            <input id="pm10" type="number" placeholder="µg/m³">
           </div>
         </div>
 
@@ -208,17 +217,12 @@
           <label for="datetime">Date &amp; heure</label>
           <input id="datetime" type="datetime-local" required>
         </div>
-
-        <div class="buttons">
-          <button type="button" id="savePoint">
-            <span id="saveLabel">Enregistrement</span>
-          </button>
-        </div>
       </form>
     </main>
 
     <footer>
-      <button class="export-btn" id="exportXlsx">Export en .xlsx</button>
+      <button id="saveFooter" class="btn-save">Enregistrement</button>
+      <button id="exportXlsx" class="btn-export">Export en .xlsx</button>
     </footer>
   </div>
 
@@ -230,9 +234,8 @@
     const get = id => document.getElementById(id);
     const pointSelect = get('pointSelect'),
           btnGeo      = get('btnGeo'),
-          btnSave     = get('savePoint'),
-          btnExport   = get('exportXlsx'),
-          saveLabel   = get('saveLabel'),
+          saveBtn     = get('saveFooter'),
+          exportBtn   = get('exportXlsx'),
           addressEl   = get('address'),
           latEl       = get('latDMS'),
           lngEl       = get('lngDMS'),
@@ -260,6 +263,7 @@
              .toISOString().slice(0,16);
     }
 
+    // Convert to DMS
     const toDMS = v => {
       const deg = Math.floor(v),
             min = Math.floor((v - deg)*60),
@@ -271,34 +275,30 @@
       [addressEl,latEl,lngEl].forEach(e=>e.value='');
       sensors.forEach(e=>e.value='');
       datetimeEl.value = nowLocal();
-      [photo1Btn,photo2Btn].forEach(b=>{
-        b.classList.remove('filled');
-        b.title = '';
-      });
+      [photo1Btn,photo2Btn].forEach(b=> b.classList.remove('filled'));
       photo1.value = photo2.value = '';
+      updateSaveState();
     }
 
-    function load(key) {
-      clear();
-      saveLabel.textContent = key
-        ? (points[key] ? `Mettre à jour ${key}` : `Enregistrement ${key}`)
-        : 'Enregistrement';
-      if (points[key]) {
-        const p = points[key];
-        addressEl.value  = p.address;
-        latEl.value      = p.lat;
-        lngEl.value      = p.lng;
-        no2El.value      = p.no2;
-        c6h6El.value     = p.c6h6;
-        pm10El.value     = p.pm10;
-        datetimeEl.value = p.datetime;
-        if (p.b64_1) photo1Btn.classList.add('filled'), photo1Btn.title = p.photo1Name;
-        if (p.b64_2) photo2Btn.classList.add('filled'), photo2Btn.title = p.photo2Name;
+    function updateSaveState() {
+      const hasPoint = !!pointSelect.value;
+      const hasCoords = addressEl.value && latEl.value && lngEl.value;
+      const hasPhoto = photo1Btn.classList.contains('filled') && photo2Btn.classList.contains('filled');
+      const hasDate = !!datetimeEl.value;
+      const hasSensor = sensors.some(e => e.value.trim() !== '');
+      const ready = hasPoint && hasCoords && hasPhoto && hasDate && hasSensor;
+      if (ready) {
+        saveBtn.classList.add('enabled');
+        saveBtn.disabled = false;
+      } else {
+        saveBtn.classList.remove('enabled');
+        saveBtn.disabled = true;
       }
     }
 
-    pointSelect.addEventListener('change', ()=>load(pointSelect.value));
-    load('');
+    pointSelect.addEventListener('change', updateSaveState);
+    [no2El, c6h6El, pm10El].forEach(e => e.addEventListener('input', updateSaveState));
+    datetimeEl.addEventListener('change', updateSaveState);
 
     btnGeo.addEventListener('click', () => {
       if (!navigator.geolocation) return alert("Géoloc non supportée");
@@ -314,6 +314,7 @@
         addressEl.value = `${street}, ${city}`;
         latEl.value = toDMS(latitude);
         lngEl.value = toDMS(longitude);
+        updateSaveState();
       }, e => alert("Erreur position : " + e.message));
     });
 
@@ -340,30 +341,24 @@
       const c = document.createElement('canvas');
       c.width = cw; c.height = ch;
       const ctx = c.getContext('2d');
-      // Pas de rotation : angle = 0
-      const scale = Math.min(cw/img.width, ch/img.height);
+      // Cropping cover to remove black bars
+      const scale = Math.max(cw/img.width, ch/img.height);
       const w = img.width * scale, h = img.height * scale;
       ctx.drawImage(img, (cw - w)/2, (ch - h)/2, w, h);
+      updateSaveState();
       return c.toDataURL('image/jpeg', 0.9).split(',')[1];
     }
 
-    photo1Btn.addEventListener('click', ()=>photo1.click());
-    photo2Btn.addEventListener('click', ()=>photo2.click());
+    photo1Btn.addEventListener('click', () => photo1.click());
+    photo2Btn.addEventListener('click', () => photo2.click());
     photo1.addEventListener('change', () => photo1.files[0] && transformImage(photo1.files[0], photo1Btn));
     photo2.addEventListener('change', () => photo2.files[0] && transformImage(photo2.files[0], photo2Btn));
 
-    btnSave.addEventListener('click', async () => {
+    saveBtn.addEventListener('click', async () => {
+      if (!saveBtn.classList.contains('enabled')) return;
       const key = pointSelect.value;
-      if (!key) return alert("Sélectionne un point.");
-      if (!photo1.files[0] || !photo2.files[0]) {
-        return alert("Veuillez prendre les deux photos avant d'enregistrer.");
-      }
-      if (!sensors.every(e => e.value.trim() !== '')) {
-        return alert("Merci de renseigner toutes les valeurs de capteurs (NO₂, C₆H₆, PM₁₀).");
-      }
       const p1 = await transformImage(photo1.files[0], photo1Btn);
       const p2 = await transformImage(photo2.files[0], photo2Btn);
-
       points[key] = {
         address: addressEl.value,
         lat:     latEl.value,
@@ -378,15 +373,10 @@
         b64_2:   p2
       };
       alert(`Données ${key} enregistrées !`);
-      let next = '';
-      for (let i=1;i<=40;i++) {
-        if (!points[`P${i}`]) { next=`P${i}`; break; }
-      }
-      pointSelect.value = next;
-      load(next);
+      clear();
     });
 
-    btnExport.addEventListener('click', async () => {
+    exportBtn.addEventListener('click', async () => {
       if (!confirm("Tu es sûr ? Sauvegarder réinitialise l’app.")) return;
       const affaire = affaireEl.value.trim()||'Sans_affaire';
       const filename = `${affaire}_Fiche_de_points_de_mesure.xlsx`;
@@ -423,16 +413,4 @@
         }
         if (p.b64_2) {
           const id2 = wb.addImage({ base64:p.b64_2, extension:'jpeg' });
-          ws.addImage(id2, { tl:{col:5,row:row-1}, ext:{width:imgW, height:imgH} });
-        }
-        row++;
-      }
-      const buf = await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buf],{type:'application/octet-stream'}), filename);
-      Object.keys(points).forEach(k=>delete points[k]);
-      load('');
-    });
-  });
-  </script>
-</body>
-</html>
+          ws.addImage(id2, { tl:{col
