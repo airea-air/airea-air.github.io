@@ -18,7 +18,7 @@
       min-height: 100vh;
     }
     header, footer {
-      background-color: #0056b3;
+      background-color: #003a80; /* bleu plus foncé */
       color: #fff;
       text-align: center;
       padding: 1rem;
@@ -44,7 +44,8 @@
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1.5rem;
     }
-    /* wrapper pour animation de bordure */
+
+    /* wrapper pour l’effet électrique */
     .box-wrapper {
       position: relative;
       border-radius: 12px;
@@ -52,21 +53,23 @@
     .box-wrapper::before {
       content: '';
       position: absolute;
-      top: -3px; left: -3px; right: -3px; bottom: -3px;
-      background: conic-gradient(
-        from 0deg,
-        #0056b3,
-        #00aced,
-        #0056b3
-      );
-      z-index: 0;
-      animation: spin 4s linear infinite;
-      border-radius: 15px;
+      top: -2px; left: -2px; right: -2px; bottom: -2px;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      pointer-events: none;
+      animation: electric 1.5s infinite;
     }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
+    @keyframes electric {
+      0%, 100% {
+        border-color: rgba(0, 172, 237, 0.6);
+        box-shadow: 0 0 8px rgba(0, 172, 237, 0.6), 0 0 16px rgba(0, 58, 128, 0.4);
+      }
+      50% {
+        border-color: rgba(0, 172, 237, 1);
+        box-shadow: 0 0 4px rgba(0, 172, 237, 1), 0 0 12px rgba(0, 58, 128, 0.6);
+      }
     }
+
     .box {
       position: relative;
       background: #fff;
@@ -87,6 +90,7 @@
       transform: translateY(-4px);
       box-shadow: 0 8px 16px rgba(0,0,0,0.15);
     }
+
     footer p {
       font-size: 0.9rem;
     }
