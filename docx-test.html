@@ -56,6 +56,9 @@
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
       try {
+        // Créer document Word avant utilisation dans Media
+        const doc = new Document({ sections: [{ children: [] }] });
+
         // Préparer le buffer des images
         async function fetchBuffer(dataURL) {
           const res = await fetch(dataURL);
@@ -80,8 +83,8 @@
           ] })
         ] });
 
-        // Créer document Word avec le tableau en section
-        const doc = new Document({ sections: [{ children: [table] }] });
+        // Ajouter le tableau dans une nouvelle section
+        doc.addSection({ children: [table] });
 
         // Générer et télécharger
         const blob = await Packer.toBlob(doc);
