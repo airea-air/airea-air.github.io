@@ -76,12 +76,9 @@
       margin-bottom:1rem;
     }
 
-    /* Adresse en pleine largeur */
-    #address {
-      /* héritera de width:100% */
-    }
+    #address {}
 
-    /* grid Coordonnées Lat/Lng en 50/50 */
+    /* Coordonnées Lat/Lng en 50/50 dans un grid */
     .coords {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -90,7 +87,7 @@
       margin-bottom:1rem;
     }
 
-    /* grid Photos */
+    /* Grid Photos */
     .photos {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -115,7 +112,7 @@
       display:block;
     }
 
-    /* grid Capteurs pleine largeur */
+    /* Grid N° de capteurs */
     .sensors {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -174,12 +171,12 @@
           </select>
         </div>
 
-        <!-- Géoloc -->
+        <!-- Géolocalisation -->
         <div class="row">
-          <button type="button" id="btnGeo">Obtenir adresse & coordonnées</button>
+          <button type="button" id="btnGeo">Géolocalisation</button>
         </div>
 
-        <!-- Adresse pleine largeur -->
+        <!-- Adresse -->
         <div class="row">
           <label for="address">Adresse</label>
           <input id="address" type="text" readonly>
@@ -277,7 +274,7 @@
       }
       datetimeEl.value = nowLocal();
 
-      // DMS
+      // Latitude et longitude au format DMS
       const toDMS = v => {
         const deg = Math.floor(v),
               min = Math.floor((v - deg)*60),
@@ -285,7 +282,7 @@
         return `${deg}°${min}'${sec}"`;
       };
 
-      // Géoloc
+      // Géolocalisation
       btnGeo.addEventListener('click', () => {
         if (!navigator.geolocation) return alert("Géoloc non supportée");
         navigator.geolocation.getCurrentPosition(async pos => {
