@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Airea tools</title>
+  <style>
+    /* Reset minimal */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header, footer {
+      background-color: #007BFF;
+      color: #fff;
+      text-align: center;
+      padding: 1rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+    }
+    main {
+      flex: 1;
+      padding: 2rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .box {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+    }
+    .box:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    footer p {
+      font-size: 0.9rem;
+    }
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.4rem;
+      }
+      .box {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Airea tools</h1>
+  </header>
+
+  <main>
+    <div class="grid">
+      <div class="box" onclick="location.href='https://www.airea-air.com/jdn.html'">
+        Outil JDN
+      </div>
+      <div class="box" onclick="location.href='https://www.airea-air.com/fiche-de-points.html'">
+        Fiche de points
+      </div>
+      <div class="box">
+        <!-- Vide pour l’instant -->
+      </div>
+      <div class="box">
+        <!-- Vide pour l’instant -->
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Airea · Tous droits réservés</p>
+  </footer>
+
+</body>
+</html>
