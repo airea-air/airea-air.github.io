@@ -23,9 +23,10 @@
 
   <button id="exportBtn" disabled>Exporter XLSX</button>
 
-  <!-- Librairies ExcelJS et FileSaver -->
+  <!-- Librairies ExcelJS, FileSaver et exif-js -->
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
   <script>
     let dataURL1 = null;
     let dataURL2 = null;
@@ -42,14 +43,19 @@
       const reader = new FileReader();
       reader.onload = evt => {
         const dataURL = evt.target.result;
-        if (num === 1) {
-          dataURL1 = dataURL;
-          document.getElementById('preview1').src = dataURL1;
-        } else {
-          dataURL2 = dataURL;
-          document.getElementById('preview2').src = dataURL2;
-        }
-        checkReady();
+        EXIF.getData(file, function() {
+          const ori = EXIF.getTag(this, 'Orientation') || 1;
+          normalizeOrientation(dataURL, ori).then(normDataURL => {
+            if (num === 1) {
+              dataURL1 = normDataURL;
+              document.getElementById('preview1').src = dataURL1;
+            } else {
+              dataURL2 = normDataURL;
+              document.getElementById('preview2').src = dataURL2;
+            }
+            checkReady();
+          });
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -58,40 +64,63 @@
       document.getElementById('exportBtn').disabled = !(dataURL1 && dataURL2);
     }
 
+    // Normalisation orientation et ratio via canvas
+    function normalizeOrientation(dataURL, orientation) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const maxW = 150, maxH = 200;
+          // Calcul ratio
+          let width = img.width, height = img.height;
+          const ratio = Math.min(maxW / width, maxH / height);
+          width *= ratio; height *= ratio;
+
+          // Canvas dimensions selon orientation
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (orientation >= 5 && orientation <= 8) {
+            canvas.width = height;
+            canvas.height = width;
+          } else {
+            canvas.width = width;
+            canvas.height = height;
+          }
+
+          // Appliquer rotation
+          switch (orientation) {
+            case 2: ctx.transform(-1, 0, 0, 1, width, 0); break; // miroir horizontal
+            case 3: ctx.transform(-1, 0, 0, -1, width, height); break; // 180°
+            case 4: ctx.transform(1, 0, 0, -1, 0, height); break; // miroir vertical
+            case 5: ctx.transform(0, 1, 1, 0, 0, 0); break; // rotation 90° et miroir
+            case 6: ctx.transform(0, 1, -1, 0, height, 0); break; // rotation 90°
+            case 7: ctx.transform(0, -1, -1, 0, height, width); break; // rotation 270° et miroir
+            case 8: ctx.transform(0, -1, 1, 0, 0, width); break; // rotation 270°
+            default: break;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = dataURL;
+      });
+    }
+
     document.getElementById('exportBtn').addEventListener('click', async () => {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Photos');
 
-      // Ajuster dimensions de colonnes et lignes
       worksheet.getColumn(1).width = 30;
       worksheet.getColumn(2).width = 30;
       worksheet.getRow(1).height = 120;
       worksheet.getRow(2).height = 120;
 
-      // Fonction pour ajouter image avec ratio conservé
       async function addImageFromDataURL(dataURL, col, row) {
-        const img = new Image();
-        return new Promise(resolve => {
-          img.onload = () => {
-            // Calcul du ratio et dimensions max
-            const maxW = 150, maxH = 200;
-            const ratio = Math.min(maxW / img.width, maxH / img.height);
-            const extW = img.width * ratio;
-            const extH = img.height * ratio;
-
-            const imgId = workbook.addImage({ base64: dataURL, extension: 'png' });
-            worksheet.addImage(imgId, { tl: { col, row }, ext: { width: extW, height: extH } });
-            resolve();
-          };
-          img.src = dataURL;
-        });
+        const imgId = workbook.addImage({ base64: dataURL, extension: 'png' });
+        worksheet.addImage(imgId, { tl: { col, row }, ext: { width: null, height: null } });
       }
 
-      // Ajouter les deux images
       await addImageFromDataURL(dataURL1, 0, 0);
       await addImageFromDataURL(dataURL2, 1, 1);
 
-      // Générer et télécharger
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/octet-stream' });
       saveAs(blob, 'photos.xlsx');
