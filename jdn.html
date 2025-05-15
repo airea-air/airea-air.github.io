@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <title>Airea | Jury de nez</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+
+  <!-- Font-Awesome 6 -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-p+6FUKn8zlF4OFklJ0ncP1BohUNRH/Rdzh1s5aZ/L9ZZSPgk/Vxmjc+XhHzs+o3rRjRA3SWcCiUz6P2e7Z8U9Q=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -33,7 +35,7 @@
     }
     label { display: block; font-size: .85rem; }
 
-    /* styles partagés pour select, input et button */
+    /* styles partagés pour select, input et bouton */
     select,
     input[type="time"],
     input[type="number"],
@@ -49,6 +51,12 @@
       border-radius: 2px;
       background: white;
       color: #333;
+    }
+
+    /* bouton "Nouvelle mesure" légèrement grisé */
+    #new {
+      background: #f0f0f0;
+      cursor: pointer;
     }
 
     /* textarea spécifique */
@@ -71,10 +79,9 @@
       border: none;
       border-radius: 4px;
       color: white;
-      cursor: pointer;
     }
-    #add { background: #757575; }
-    #download { background: #e53935; }
+    #add     { background: #757575; }
+    #download{ background: #e53935; }
 
     /* notes rows (inchangées) */
     #notes .note-row {
@@ -103,16 +110,16 @@
 
   <main>
 
-    <!-- Point de mesure + Nouvelle mesure -->
+    <!-- Point de mesure / Nouvelle mesure avec titres -->
     <div class="grid2">
       <div>
-        <label>Point de mesure
-          <select id="point"></select>
-        </label>
+        <label for="point">Point de mesure</label>
+        <select id="point"></select>
       </div>
       <div>
+        <label for="new">Nouvelle mesure</label>
         <button id="new">
-          Nouvelle mesure <i class="fa-solid fa-flask"></i>
+          <i class="fa-solid fa-flask"></i>
         </button>
       </div>
     </div>
@@ -120,28 +127,24 @@
     <!-- Session / Heure -->
     <div class="grid2">
       <div>
-        <label>Session
-          <select id="session"><option>AM</option><option>PM</option></select>
-        </label>
+        <label for="session">Session</label>
+        <select id="session"><option>AM</option><option>PM</option></select>
       </div>
       <div>
-        <label>Heure
-          <input type="time" id="heure">
-        </label>
+        <label for="heure">Heure</label>
+        <input type="time" id="heure">
       </div>
     </div>
 
     <!-- Vent -->
     <div class="grid2">
       <div>
-        <label>Direction du vent
-          <input type="text" id="ventDir">
-        </label>
+        <label for="ventDir">Direction du vent</label>
+        <input type="text" id="ventDir">
       </div>
       <div>
-        <label>Vitesse du vent (m/s)
-          <input type="number" id="ventVit" min="0" step="0.1">
-        </label>
+        <label for="ventVit">Vitesse du vent (m/s)</label>
+        <input type="number" id="ventVit" min="0" step="0.1">
       </div>
     </div>
 
@@ -149,9 +152,8 @@
     <div id="notes"></div>
 
     <!-- Commentaires -->
-    <label>Commentaires :
-      <textarea id="commentaire"></textarea>
-    </label>
+    <label for="commentaire">Commentaires :</label>
+    <textarea id="commentaire"></textarea>
 
   </main>
 
@@ -163,7 +165,7 @@
   <script>
   // stockage sous forme de map point_session → row
   let dataMap = JSON.parse(localStorage.getItem('mesuresMap') || '{}');
-  let saved = true;
+  let saved   = true;
 
   const pointSel   = document.getElementById('point');
   const sessionSel = document.getElementById('session');
@@ -219,12 +221,8 @@
 
   const $val = id => document.getElementById(id).value;
 
-  function saveMap() {
-    localStorage.setItem('mesuresMap', JSON.stringify(dataMap));
-  }
-  function getNowHM() {
-    return new Date().toTimeString().slice(0,5);
-  }
+  function saveMap()    { localStorage.setItem('mesuresMap', JSON.stringify(dataMap)); }
+  function getNowHM()   { return new Date().toTimeString().slice(0,5); }
   function updateAddLabel() {
     addBtn.textContent = dataMap[`${pointSel.value}_${sessionSel.value}`]
       ? `Mettre à jour ${pointSel.value}`
