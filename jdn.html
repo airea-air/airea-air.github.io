@@ -5,6 +5,7 @@
   <title>Airea | Jury de nez</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p+6FUKn8zlF4OFklJ0ncP1BohUNRH/Rdzh1s5aZ/L9ZZSPgk/Vxmjc+XhHzs+o3rRjRA3SWcCiUz6P2e7Z8U9Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <!-- Librairie SheetJS pour générer du XLSX -->
@@ -22,26 +23,6 @@
     }
     header h1 { margin: 0; font-size: 1.2rem; }
     main { padding: 0.5rem 1rem; }
-
-    /* Actions row: flex layout for dropdown + button */
-    .grid2.actions {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .grid2.actions > div {
-      flex: 1;
-    }
-    .grid2.actions select,
-    .grid2.actions button {
-      width: 100%;
-      height: 2.5rem;
-      box-sizing: border-box;
-      font-size: .85rem;
-    }
-
     .grid2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -73,6 +54,7 @@
       padding: .3rem 1rem;
       display: flex; gap: .3rem;
     }
+    #new i { margin-right: 0.4rem; }
     footer button {
       flex: 1; padding: .6rem; font-size: .9rem; border: none;
       border-radius: 4px; color: white;
@@ -96,16 +78,16 @@
 
   <main>
 
-    <!-- Ligne actions: dropdown point + nouveau bouton en flex -->
-    <div class="grid2 actions">
+    <div class="grid2">
       <div>
         <label>Point de mesure
           <select id="point"></select>
         </label>
       </div>
-      <div style="text-align:right;">
+      <div style="display:flex;align-items:flex-end;justify-content:flex-end;">
         <button id="new">
-          Nouvelle mesure <i class="fas fa-flask"></i>
+          <i class="fa-solid fa-flask"></i>
+          Nouvelle mesure
         </button>
       </div>
     </div>
@@ -160,11 +142,11 @@
   const jurySel    = document.getElementById('jury');
   const addBtn     = document.getElementById('add');
 
-  // 1) charger le jury depuis le localStorage**
+  // 1) charger le jury depuis le localStorage
   const savedJury = localStorage.getItem('selectedJury');
   if (savedJury) jurySel.value = savedJury;
 
-  // 2) Sauvegarder le jury quand on change**
+  // 2) Sauvegarder le jury quand on change
   jurySel.addEventListener('change', () => {
     localStorage.setItem('selectedJury', jurySel.value);
   });
@@ -296,7 +278,7 @@
     dataMap[key] = row;
     saveMap();
     saved = true;
-    alert('Mesure enregistrée');
+    alert(dataMap[key] ? 'Mesure mise à jour' : 'Mesure enregistrée');
     updateAddLabel();
   };
 
@@ -311,6 +293,7 @@
     if (!keys.length) return alert('Aucune donnée à exporter');
     const rows = keys.map(k => dataMap[k]);
 
+    // Préparer le tableau pour SheetJS
     const headerRow = [
       'Point','Session','Heure','DirectionVent','VitesseVent',
       ...categories.flatMap(c=>[`Intensite_${c.code}_continu`,`Intensite_${c.code}_bousee`]),
@@ -318,13 +301,16 @@
     ];
     const aoa = [ headerRow, ...rows ];
 
+    // Création du classeur et de la feuille
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Mesures');
 
+    // Nom de fichier selon jury
     const juryCode = jurySel.value;
     XLSX.writeFile(wb, `JDN_${juryCode}.xlsx`);
 
+    // Réinitialiser l'interface
     resetForm();
   };
   </script>
