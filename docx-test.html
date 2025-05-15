@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Export Photos Portrait Rognées</title>
+  <title>Export Photos Portrait Rognées (PNG)</title>
   <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
@@ -31,7 +31,7 @@
 
     let images = []; // contiendra { buffer, previewURL }
 
-    // charge, normalise, rogner au centre, resize & encode en JPEG
+    // charge, normalise, rogner au centre, resize & encode en PNG
     async function processFile(file, previewImgEl) {
       // 1. lire en DataURL
       const dataURL = await new Promise(r => {
@@ -68,8 +68,11 @@
       targetCanvas.width = TARGET_W;
       targetCanvas.height = TARGET_H;
       const ctx = targetCanvas.getContext('2d');
+      // optimiser le rééchantillonnage
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(normCanvas, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
-      // 5. exporter JPEG
+      // 5. exporter PNG (sans perte)
       return new Promise((resolve, reject) => {
         targetCanvas.toBlob(blob => {
           const fr = new FileReader();
@@ -81,7 +84,7 @@
           };
           fr.onerror = reject;
           fr.readAsArrayBuffer(blob);
-        }, 'image/jpeg', 0.8);
+        }, 'image/png');
       });
     }
 
@@ -142,7 +145,7 @@
       ws.getRow(2).height = TARGET_H * 0.75;           // ligne 2
 
       images.forEach((img, i) => {
-        const id = wb.addImage({ buffer: img.buffer, extension: 'jpeg' });
+        const id = wb.addImage({ buffer: img.buffer, extension: 'png' });
         ws.addImage(id, {
           tl: { col: 0, row: i },
           ext: { width: TARGET_W, height: TARGET_H }
