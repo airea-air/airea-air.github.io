@@ -66,18 +66,21 @@
       font-size:var(--font-base);
       box-shadow:var(--box-shadow);
     }
-    .coords { display:flex; gap:1rem; }
-    .coords>div { flex:1; display:flex; flex-direction:column; }
+
+    /* 1) grid pour Photo 1 & 2 */
     .photos {
-      display:flex; gap:1rem;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom:1rem;
     }
     .photos button {
-      flex:1;
-      position:relative;
+      position: relative;
       background:#fff;
       transition:background .2s,border-color .2s;
       display:flex; align-items:center; justify-content:center;
       border:1px solid var(--airea-border);
+      padding:.6rem;
     }
     .photos button .btn-check {
       position:absolute; top:.4rem; right:.4rem;
@@ -88,11 +91,18 @@
       border-color:var(--airea-blue);
     }
     .photos button.filled .btn-check { display:block; }
+
+    /* 2) grid pour NO2 / C6H6 / PM10 */
     .sensors {
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(60px,1fr));
-      gap:1rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom:1rem;
     }
+    .sensors div {
+      display:flex; flex-direction:column;
+    }
+
     .footer {
       height:3.5rem;
       display:flex; align-items:center; justify-content:space-between;
@@ -158,7 +168,8 @@
           </div>
         </div>
 
-        <div class="row photos">
+        <!-- zone photos -->
+        <div class="photos">
           <button type="button" id="photo1Btn">
             Photo 1<span class="btn-check">✓</span>
           </button>
@@ -169,7 +180,8 @@
           <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
         </div>
 
-        <div class="row sensors">
+        <!-- zone capteurs -->
+        <div class="sensors">
           <div>
             <label for="no2">NO₂</label>
             <input id="no2" type="number" placeholder="µg/m³">
@@ -272,7 +284,6 @@
 
           EXIF.getData(file, function() {
             const orientation = EXIF.getTag(this, 'Orientation') || 1;
-            // dimensions portrait fixes
             const pxPerCm = 96/2.54,
                   cw = Math.round(5.25 * pxPerCm),
                   ch = Math.round(7    * pxPerCm);
@@ -281,26 +292,23 @@
             c.width = cw;
             c.height = ch;
 
-            // appliquer rotation selon EXIF
             switch (orientation) {
-              case 6: // 90° CW
+              case 6:
                 ctx.translate(cw, 0);
                 ctx.rotate(Math.PI/2);
                 break;
-              case 8: // 270° CW
+              case 8:
                 ctx.translate(0, ch);
                 ctx.rotate(-Math.PI/2);
                 break;
-              case 3: // 180°
+              case 3:
                 ctx.translate(cw, ch);
                 ctx.rotate(Math.PI);
                 break;
             }
 
-            // ajuster échelle pour couvrir
             let imgW = img.width, imgH = img.height;
             if ([6,8].includes(orientation)) {
-              // swap si rotation à 90/270
               [imgW, imgH] = [img.height, img.width];
             }
             const scale = Math.max(cw / imgW, ch / imgH);
@@ -389,7 +397,6 @@
       }
       const buf = await wb.xlsx.writeBuffer();
       saveAs(new Blob([buf],{type:'application/octet-stream'}), filename);
-      // réinitialise
       Object.keys(points).forEach(k=>delete points[k]);
       location.reload();
     });
