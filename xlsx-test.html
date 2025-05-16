@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Export Photos Portrait Rognées (XLSX)</title>
+  <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+  <style>
+    button { margin: 0.5em; padding: 0.75em 1.5em; font-size: 1em; }
+  </style>
+</head>
+<body>
+  <button id="btn1">Prendre photo 1</button>
+  <button id="btn2">Prendre photo 2</button>
+  <div>
+    <button id="exportXlsx" disabled>Exporter .xlsx</button>
+  </div>
+
+  <script>
+    // conversion cm → px (96 DPI)
+    const cmToPx = cm => Math.round(cm / 2.54 * 96);
+    const TARGET_W = cmToPx(5.25); // ≈198 px
+    const TARGET_H = cmToPx(7);    // ≈265 px
+    const TARGET_RATIO = TARGET_W / TARGET_H; // = 4/3 portrait
+
+    let images = []; // contiendra { buffer }
+
+    // charge, normalise, rogner au centre, resize & encode en PNG
+    async function processFile(file) {
+      // 1. lire en DataURL
+      const dataURL = await new Promise(resolve => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.readAsDataURL(file);
+      });
+      // 2. normalisation EXIF via blueimp-load-image
+      const { canvas: normCanvas } = await new Promise((resolve, reject) => {
+        loadImage(
+          dataURL,
+          imgOrCanvas => resolve({ canvas: imgOrCanvas }),
+          { orientation: true, canvas: true }
+        );
+      });
+      // 3. rognage central au ratio TARGET_RATIO
+      const w = normCanvas.width, h = normCanvas.height;
+      let sx, sy, sw, sh;
+      if (w / h > TARGET_RATIO) {
+        // trop large → rogner sur la largeur
+        sh = h;
+        sw = h * TARGET_RATIO;
+        sx = (w - sw) / 2;
+        sy = 0;
+      } else {
+        // trop haut → rogner sur la hauteur
+        sw = w;
+        sh = w / TARGET_RATIO;
+        sx = 0;
+        sy = (h - sh) / 2;
+      }
+      // 4. dessiner dans un canvas cible
+      const targetCanvas = document.createElement('canvas');
+      targetCanvas.width = TARGET_W;
+      targetCanvas.height = TARGET_H;
+      const ctx = targetCanvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(normCanvas, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
+      // 5. exporter PNG (sans perte)
+      return new Promise((resolve, reject) => {
+        targetCanvas.toBlob(blob => {
+          const fr = new FileReader();
+          fr.onload = () => {
+            resolve(fr.result);  // ArrayBuffer
+          };
+          fr.onerror = reject;
+          fr.readAsArrayBuffer(blob);
+        }, 'image/png');
+      });
+    }
+
+    function setupButton(btnId, idx) {
+      document.getElementById(btnId).addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment';
+        input.onchange = async () => {
+          images[idx] = await processFile(input.files[0]);
+          if (images[0] && images[1]) {
+            document.getElementById('exportXlsx').disabled = false;
+          }
+        };
+        input.click();
+      });
+    }
+
+    setupButton('btn1', 0);
+    setupButton('btn2', 1);
+
+    // --- Export XLSX ---
+    document.getElementById('exportXlsx').addEventListener('click', async () => {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Photos');
+      // ajustement colonnes/lignes pour la taille cm → points/caractères
+      ws.getColumn(1).width = TARGET_W * 0.14;         // colonne A
+      ws.getRow(1).height = TARGET_H * 0.75;           // ligne 1
+      ws.getRow(2).height = TARGET_H * 0.75;           // ligne 2
+
+      images.forEach((buffer, i) => {
+        const id = wb.addImage({ buffer, extension: 'png' });
+        ws.addImage(id, {
+          tl: { col: 0, row: i },
+          ext: { width: TARGET_W, height: TARGET_H }
+        });
+      });
+
+      const buf = await wb.xlsx.writeBuffer();
+      saveAs(new Blob([buf]), 'photos.xlsx');
+    });
+  </script>
+</body>
+</html>
