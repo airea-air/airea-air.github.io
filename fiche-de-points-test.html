@@ -248,12 +248,14 @@
       const zoom = 17;
     
       const url = `https://maps.googleapis.com/maps/api/staticmap`
-                + `?center=${lat},${lon}`
-                + `&zoom=${zoom}`
-                + `&size=${reqW}x${reqH}`
-                + `&maptype=satellite`
-                + `&key=AIzaSyCbP5xIyt4PCn-tzJpr3sOJd2BO7gV43-w`;
-    
+            + `?center=${lat},${lon}`
+            + `&markers=color:red|${lat},${lon}`    // ajoute un marqueur
+            + `&scale=2`                             // meilleure résolution
+            + `&zoom=${zoom}`
+            + `&size=${reqW}x${reqH}`
+            + `&maptype=satellite`
+            + `&key=AIzaSyCbP5xIyt4PCn-tzJpr3sOJd2BO7gV43-w`;
+
       const img = new Image();
       img.crossOrigin = 'Anonymous';
       img.src = url;
@@ -382,7 +384,7 @@
           sat:''
         });
         ws.getRow(row).height = Math.round(imgH*0.75);
-        // photos
+        // Implantation des photos dans le fichier excel
         if(p.b64_1){
           const id1 = wb.addImage({base64:p.b64_1,extension:'jpeg'});
           ws.addImage(id1,{tl:{col:4,row:row-1},ext:{width:imgW,height:imgH}});
@@ -391,17 +393,17 @@
           const id2 = wb.addImage({base64:p.b64_2,extension:'jpeg'});
           ws.addImage(id2,{tl:{col:5,row:row-1},ext:{width:imgW,height:imgH}});
         }
-        // satellite
+        // Implantation de la vue satellite dans le fichier excel
         if(p.sat){
           const id3 = wb.addImage({base64:p.sat,extension:'png'});
-          ws.addImage(id3,{tl:{col:11,row:row-1},ext:{width:imgW,height:imgH}});
+          ws.addImage(id3, { tl:{col:10,row:row-1}, ext:{width:imgW,height:imgH} });
         }
         row++;
       }
       const buf = await wb.xlsx.writeBuffer();
       saveAs(new Blob([buf],{type:'application/octet-stream'}),
              `${affaireEl.value||'Sans_affaire'}_Fiche_de_points_de_mesure.xlsx`);
-      // remise à zéro
+      // Remise à zéro
       Object.keys(points).forEach(k=>delete points[k]);
       location.reload();
     });
