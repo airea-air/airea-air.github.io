@@ -156,7 +156,7 @@
 
   <!-- Librairies externes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-load-image/5.16.0/load-image.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <script>
@@ -179,13 +179,12 @@
           affaireEl   = get('affaire');
 
     const points = {};
-    let lastSatB64 = null;
     let images = [null, null];
 
     // cm → px @96dpi
     const cmToPx = cm => Math.round(cm / 2.54 * 96);
-    const TARGET_W = cmToPx(5.25),    // ≃198px
-          TARGET_H = cmToPx(7),       // ≃265px
+    const TARGET_W = cmToPx(5.25),
+          TARGET_H = cmToPx(7),
           TARGET_RATIO = TARGET_W / TARGET_H;
 
     // Remplir le select
@@ -221,7 +220,7 @@
       return `${deg}°${min}'${sec}"`;
     };
 
-    // Géoloc + adresse + DMS + capture satellite (optionnel)
+    // Géoloc + adresse + DMS
     btnGeo.addEventListener('click', () => {
       clearErrors();
       if (!navigator.geolocation) {
@@ -229,47 +228,32 @@
       }
       navigator.geolocation.getCurrentPosition(async pos => {
         const { latitude, longitude } = pos.coords;
-        // Adresse
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
         const d = await res.json(), a = d.address||{};
         addressEl.value = `${a.house_number||''} ${a.road||''}`.trim()
                         + ', ' + (a.city||a.town||a.village||a.county||'');
         latEl.value = toDMS(latitude);
         lngEl.value = toDMS(longitude);
-        // (Vous pouvez réintégrer ici la capture satellite si besoin,
-        // comme vu dans la version précédente.)
       }, e => showErrors([`Erreur position : ${e.message}`]));
     });
 
-    // Traitement de l’image : normalisation EXIF, rognage central, resizing PNG
+    // Traitement des photos
     async function processFile(file) {
-      // 1) lire en DataURL
       const dataURL = await new Promise(resolve => {
         const fr = new FileReader();
         fr.onload = () => resolve(fr.result);
         fr.readAsDataURL(file);
       });
-      // 2) EXIF + orientation via blueimp-load-image
       const { canvas: normCanvas } = await new Promise((resolve, reject) => {
-        loadImage(
-          dataURL,
-          imgOrCanvas => resolve({ canvas: imgOrCanvas }),
-          { orientation: true, canvas: true }
-        );
+        loadImage(dataURL, imgOrCanvas => resolve({ canvas: imgOrCanvas }), { orientation: true, canvas: true });
       });
-      // 3) calcul du rognage central
       const w = normCanvas.width, h = normCanvas.height;
       let sx, sy, sw, sh;
       if (w / h > TARGET_RATIO) {
-        sh = h;
-        sw = h * TARGET_RATIO;
-        sx = (w - sw) / 2; sy = 0;
+        sh = h; sw = h * TARGET_RATIO; sx = (w - sw) / 2; sy = 0;
       } else {
-        sw = w;
-        sh = w / TARGET_RATIO;
-        sx = 0; sy = (h - sh) / 2;
+        sw = w; sh = w / TARGET_RATIO; sx = 0; sy = (h - sh) / 2;
       }
-      // 4) dessiner dans un canvas cible
       const targetCanvas = document.createElement('canvas');
       targetCanvas.width = TARGET_W;
       targetCanvas.height = TARGET_H;
@@ -277,7 +261,6 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(normCanvas, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
-      // 5) exporter en PNG ArrayBuffer
       return await new Promise((resolve, reject) => {
         targetCanvas.toBlob(blob => {
           const fr = new FileReader();
@@ -288,7 +271,6 @@
       });
     }
 
-    // Setup boutons Photo
     function setupButton(btnEl, idx) {
       btnEl.addEventListener('click', () => {
         const input = document.createElement('input');
@@ -315,10 +297,8 @@
       const pt = pointSelect.value;
       if (!pt) errs.push('Sélectionner un point.');
       if (!datetimeEl.value) errs.push('Date & heure requises.');
-      if (!no2El.value && !c6h6El.value && !pm10El.value)
-        errs.push('Au moins une mesure de capteur.');
-      if (!images[0] || !images[1])
-        errs.push('Les deux photos sont obligatoires.');
+      if (!no2El.value && !c6h6El.value && !pm10El.value) errs.push('Au moins une mesure de capteur.');
+      if (!images[0] || !images[1]) errs.push('Les deux photos sont obligatoires.');
       if (errs.length) return showErrors(errs);
 
       points[pt] = {
@@ -330,8 +310,7 @@
         pm10: pm10El.value,
         datetime: datetimeEl.value,
         b64_1: images[0],
-        b64_2: images[1],
-        // sat: lastSatB64  // si vous capturez la vue satellite
+        b64_2: images[1]
       };
 
       // reset form
@@ -348,48 +327,47 @@
       alert(`Données ${pt} enregistrées !`);
     });
 
-    // Export XLSX avec photos PNG centrées
+    // Export XLSX
     btnExport.addEventListener('click', async () => {
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet('Mesures');
-      ws.columns = [
-        { header:'Point',   key:'point',   width:10 },
-        { header:'Adresse', key:'address', width:30 },
-        { header:'Lat DMS', key:'lat',     width:15 },
-        { header:'Lng DMS', key:'lng',     width:15 },
-        { header:'Photo 1', key:'photo1',  width:TARGET_W * 0.14 },
-        { header:'Photo 2', key:'photo2',  width:TARGET_W * 0.14 },
-        { header:'NO₂',     key:'no2',     width:10 },
-        { header:'C₆H₆',    key:'c6h6',    width:10 },
-        { header:'PM₁₀',    key:'pm10',    width:10 },
-        { header:'DateHeure', key:'datetime', width:20 },
-        // { header:'Vue sat.', key:'sat', width:TARGET_W * 0.14 } // si besoin
-      ];
-      ws.getColumn('datetime').numFmt = 'dd/mm/yy hh:mm';
-      const pxPerCm = 96/2.54,
-            imgW = TARGET_W,
-            imgH = TARGET_H;
-      let row = 2;
-      for (const [pt,p] of Object.entries(points)) {
-        ws.addRow({
-          point:pt, address:p.address, lat:p.lat, lng:p.lng,
-          photo1:'', photo2:'',
-          no2:p.no2, c6h6:p.c6h6, pm10:p.pm10,
-          datetime:new Date(p.datetime)
-        });
-        ws.getRow(row).height = Math.round(imgH * 0.75);
-        // insérer Photo 1 & 2
-        const id1 = wb.addImage({ buffer:p.b64_1, extension:'png' });
-        ws.addImage(id1, { tl:{col:4,row:row-1}, ext:{width:imgW,height:imgH} });
-        const id2 = wb.addImage({ buffer:p.b64_2, extension:'png' });
-        ws.addImage(id2, { tl:{col:5,row:row-1}, ext:{width:imgW,height:imgH} });
-        row++;
+      console.log('Export XLSX déclenché');
+      try {
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('Mesures');
+        ws.columns = [
+          { header:'Point', key:'point', width:10 },
+          { header:'Adresse', key:'address', width:30 },
+          { header:'Lat DMS', key:'lat', width:15 },
+          { header:'Lng DMS', key:'lng', width:15 },
+          { header:'Photo 1', key:'photo1', width:TARGET_W * 0.14 },
+          { header:'Photo 2', key:'photo2', width:TARGET_W * 0.14 },
+          { header:'NO₂', key:'no2', width:10 },
+          { header:'C₆H₆', key:'c6h6', width:10 },
+          { header:'PM₁₀', key:'pm10', width:10 },
+          { header:'DateHeure', key:'datetime', width:20 }
+        ];
+        ws.getColumn('datetime').numFmt = 'dd/mm/yy hh:mm';
+        let row = 2;
+        for (const [pt,p] of Object.entries(points)) {
+          ws.addRow({
+            point:pt, address:p.address, lat:p.lat, lng:p.lng,
+            photo1:'', photo2:'',
+            no2:p.no2, c6h6:p.c6h6, pm10:p.pm10,
+            datetime:new Date(p.datetime)
+          });
+          ws.getRow(row).height = Math.round(TARGET_H * 0.75);
+          const id1 = wb.addImage({ buffer:p.b64_1, extension:'png' });
+          ws.addImage(id1, { tl:{col:4,row:row-1}, ext:{width:TARGET_W,height:TARGET_H} });
+          const id2 = wb.addImage({ buffer:p.b64_2, extension:'png' });
+          ws.addImage(id2, { tl:{col:5,row:row-1}, ext:{width:TARGET_W,height:TARGET_H} });
+          row++;
+        }
+        const buf = await wb.xlsx.writeBuffer();
+        saveAs(new Blob([buf],{type:'application/octet-stream'}),
+               `${affaireEl.value||'Sans_affaire'}_Fiche_de_points_de_mesure.xlsx`);
+      } catch(err) {
+        console.error('Erreur à l’export XLSX', err);
+        showErrors(['Une erreur est survenue lors de l’export. Voir la console.']);
       }
-      const buf = await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buf],{type:'application/octet-stream'}),
-             `${affaireEl.value||'Sans_affaire'}_Fiche_de_points_de_mesure.xlsx`);
-      Object.keys(points).forEach(k=>delete points[k]);
-      location.reload();
     });
   });
   </script>
