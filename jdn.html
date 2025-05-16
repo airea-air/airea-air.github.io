@@ -125,7 +125,7 @@
   </main>
 
   <footer>
-    <button id="add">Ajout des données de P1</button>
+    <button id="add">Enregistrer P1</button>
     <button id="download">Tout exporter en XLSX</button>
   </footer>
 
@@ -193,7 +193,7 @@
     function updateAddLabel() {
       addBtn.textContent = dataMap[`${pointSel.value}_${sessionSel.value}`]
         ? `Mettre à jour ${pointSel.value}`
-        : `Ajout des données de ${pointSel.value}`;
+        : `Enregistrer ${pointSel.value}`;
     }
     function markDirty() { saved = false; }
 
