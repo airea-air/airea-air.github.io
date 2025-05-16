@@ -107,6 +107,7 @@
       <form id="pointForm" novalidate>
         <!-- Point de mesure -->
         <div class="row">
+          <p>PENSEZ BIEN A UTILISER GOOGLE CHROME LES TITIS</p>
           <label for="pointSelect">Point de mesure</label>
           <select id="pointSelect">
             <option value="">-- Choisir --</option>
@@ -125,7 +126,7 @@
         </div>
         <!-- Bouton géoloc -->
         <div class="row">
-          <button type="button" id="btnGeo">Obtenir adresse & coordonnées</button>
+          <button type="button" id="btnGeo">Géolocalisation</button>
         </div>
         <!-- Adresse & coordonnées -->
         <div class="row">
@@ -338,13 +339,13 @@
     btnSave.addEventListener('click', () => {
       clearErrors();
       const errs = [];
-      if (!pointSelect.value)            errs.push('Sélectionner un point.');
+      if (!pointSelect.value)            errs.push('Sélectionner un point de mesure.');
       if (!typologySelect.value)         errs.push('Sélectionner une typologie.');
       if (!datetimeEl.value)             errs.push('Date & heure requises.');
       if (!no2El.value && !c6h6El.value && !pm10El.value)
-                                          errs.push('Au moins une mesure de capteur.');
+                                          errs.push('Remplir au moins 1 numéro de capteur.');
       if (!images[0] || !images[1])       errs.push('Les deux photos sont obligatoires.');
-      if (!lastSatB64)                   errs.push('Vue satellite manquante (cliquer sur « Obtenir adresse »).');
+      if (!lastSatB64)                   errs.push('Vue satellite manquante (cliquer sur « Géolocalisation »).');
       if (errs.length) return showErrors(errs);
 
       points[pointSelect.value] = {
