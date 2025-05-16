@@ -75,9 +75,7 @@
       font-size:1.2rem; color:limegreen; display:none;
     }
     .photos button.filled {
-      background:var(--airea-blue);
-      color:#fff;
-      border-color:var(--airea-blue);
+      background:var(--airea-blue); color:#fff; border-color:var(--airea-blue);
     }
     .photos button.filled .btn-check { display:block; }
     .sensors {
@@ -91,8 +89,7 @@
     }
     .footer button {
       flex:1; margin:0 .25rem; border:none; cursor:pointer;
-      border-radius:var(--border-radius);
-      padding:.6rem; font-size:.95rem;
+      border-radius:var(--border-radius); padding:.6rem; font-size:.95rem;
       box-shadow:var(--box-shadow);
     }
     #savePoint { background:var(--green); color:#fff; }
@@ -149,6 +146,9 @@
         <div class="photos">
           <button type="button" id="photo1Btn">Photo 1<span class="btn-check">✓</span></button>
           <button type="button" id="photo2Btn">Photo 2<span class="btn-check">✓</span></button>
+          <!-- on conserve les inputs cachés pour la capture -->
+          <input type="file" id="photo1" accept="image/*" capture="environment" style="display:none">
+          <input type="file" id="photo2" accept="image/*" capture="environment" style="display:none">
         </div>
         <!-- Capteurs -->
         <div class="sensors">
@@ -169,52 +169,90 @@
     </footer>
   </div>
 
-  <!-- Librairies pour EXIF, load-image, ExcelJS, FileSaver -->
+  <!-- Librairies -->
   <script src="https://cdn.jsdelivr.net/npm/blueimp-load-image/js/load-image.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // raccourcis DOM
-    const get = id=>document.getElementById(id);
-    const pointSelect     = get('pointSelect'),
-          typologySelect  = get('typologySelect'),
-          btnGeo          = get('btnGeo'),
-          btnSave         = get('savePoint'),
-          btnExport       = get('exportXlsx'),
-          addressEl       = get('address'),
-          latEl           = get('latDMS'),
-          lngEl           = get('lngDMS'),
-          no2El           = get('no2'),
-          c6h6El          = get('c6h6'),
-          pm10El          = get('pm10'),
-          datetimeEl      = get('datetime'),
-          photo1Btn       = get('photo1Btn'),
-          photo2Btn       = get('photo2Btn'),
-          errorsDiv       = get('errors'),
-          affaireEl       = get('affaire');
+    // raccourcis
+    const get = id => document.getElementById(id);
+    const pointSelect    = get('pointSelect'),
+          typologySelect = get('typologySelect'),
+          btnGeo         = get('btnGeo'),
+          btnSave        = get('savePoint'),
+          btnExport      = get('exportXlsx'),
+          addressEl      = get('address'),
+          latEl          = get('latDMS'),
+          lngEl          = get('lngDMS'),
+          no2El          = get('no2'),
+          c6h6El         = get('c6h6'),
+          pm10El         = get('pm10'),
+          datetimeEl     = get('datetime'),
+          photo1        = get('photo1'),
+          photo2        = get('photo2'),
+          photo1Btn     = get('photo1Btn'),
+          photo2Btn     = get('photo2Btn'),
+          errorsDiv      = get('errors'),
+          affaireEl      = get('affaire');
 
-    // config photo / export (Code 1)
-    const cmToPx    = cm => Math.round(cm/2.54*96);
-    const TARGET_W  = cmToPx(5.25), TARGET_H = cmToPx(7), TARGET_RATIO = TARGET_W/TARGET_H;
-    let images = []; // contiendra ArrayBuffer pour photo1 et photo2
+    // conversion cm→px & tailles
+    const cmToPx = cm => Math.round(cm/2.54*96);
+    const PHOTO_W_CM = 5.25, PHOTO_H_CM = 7, COL_W_CM = 5.5;
+    const TARGET_W = cmToPx(PHOTO_W_CM), TARGET_H = cmToPx(PHOTO_H_CM);
+    const IMG_COL_WIDTH = Math.round(cmToPx(COL_W_CM) * 0.14); // ≃29.1 unités
+    const TARGET_RATIO = TARGET_W / TARGET_H;
 
-    async function processFile(file, btn) {
-      // 1. read as DataURL
-      const dataURL = await new Promise(res=>{
+    // stockage
+    let images = [null, null], lastSatB64 = null;
+    const points = {};
+
+    // initialisation dropdown point
+    for (let i=1; i<=40; i++) {
+      pointSelect.add(new Option(`P${i}`, `P${i}`));
+    }
+    pointSelect.addEventListener('change', () => {
+      btnSave.textContent = pointSelect.value ? `Enregistrer ${pointSelect.value}` : 'Enregistrer';
+    });
+
+    // date/heure par défaut
+    function nowLocal(){
+      const d = new Date();
+      d.setSeconds(0,0);
+      const tz = d.getTimezoneOffset();
+      return new Date(d.getTime() - tz*60000).toISOString().slice(0,16);
+    }
+    datetimeEl.value = nowLocal();
+
+    // conversion décimal → DMS
+    const toDMS = v => {
+      const deg = Math.floor(v), min = Math.floor((v-deg)*60),
+            sec = Math.round((v-deg-min/60)*3600);
+      return `${deg}°${min}'${sec}"`;
+    };
+
+    // gestion erreurs
+    function showErrors(arr){
+      errorsDiv.innerHTML = `<ul>${arr.map(e=>`<li>${e}</li>`).join('')}</ul>`;
+    }
+    function clearErrors(){ errorsDiv.innerHTML = ''; }
+
+    // --- Prise de photos (Code 1) ---
+    async function processFile(file, idx) {
+      // 1. DataURL
+      const dataURL = await new Promise(res => {
         const fr = new FileReader();
-        fr.onload = ()=>res(fr.result);
+        fr.onload = () => res(fr.result);
         fr.readAsDataURL(file);
       });
-      // 2. EXIF normalization
-      const { canvas: normCanvas } = await new Promise((res, rej) => {
-        loadImage(
-          dataURL, imgOrCanvas => res({ canvas: imgOrCanvas }),
-          { orientation:true, canvas:true }
-        );
+      // 2. EXIF normalize
+      const { canvas: norm } = await new Promise((res, rej) => {
+        loadImage(dataURL, img => res({ canvas: img }), { orientation:true, canvas:true });
       });
-      // 3. central crop
-      const w = normCanvas.width, h = normCanvas.height;
+      // 3. crop center ratio
+      const w = norm.width, h = norm.height;
       let sx, sy, sw, sh;
       if (w/h > TARGET_RATIO) {
         sh = h; sw = h*TARGET_RATIO; sx = (w-sw)/2; sy = 0;
@@ -222,130 +260,92 @@
         sw = w; sh = w/TARGET_RATIO; sx = 0; sy = (h-sh)/2;
       }
       // 4. draw into target canvas
-      const target = document.createElement('canvas');
-      target.width = TARGET_W; target.height = TARGET_H;
-      const ctx = target.getContext('2d');
+      const tgt = document.createElement('canvas');
+      tgt.width = TARGET_W; tgt.height = TARGET_H;
+      const ctx = tgt.getContext('2d');
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(normCanvas, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
+      ctx.drawImage(norm, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
       // 5. to ArrayBuffer PNG
-      return new Promise((res, rej)=>{
-        target.toBlob(blob => {
+      return new Promise((res, rej) => {
+        tgt.toBlob(blob => {
           const fr = new FileReader();
-          fr.onload = ()=>res(fr.result);
+          fr.onload = () => res(fr.result);
           fr.onerror = rej;
           fr.readAsArrayBuffer(blob);
         }, 'image/png');
       });
     }
 
-    function setupButton(btnId, idx) {
-      const btn = get(btnId);
-      btn.addEventListener('click', ()=>{
-        const input = document.createElement('input');
-        input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
-        input.onchange = async ()=>{
-          images[idx] = await processFile(input.files[0], btn);
-          btn.classList.add('filled');
-          if (images[0] && images[1]) btnExport.disabled = false;
-        };
-        input.click();
-      });
-    }
-
-    setupButton('photo1Btn', 0);
-    setupButton('photo2Btn', 1);
-
-    // --- le reste de l'app (géoloc, saisie, validations) ---
-    const points = {};
-    function nowLocal(){
-      const d = new Date(); d.setSeconds(0,0);
-      const tz = d.getTimezoneOffset();
-      return new Date(d.getTime()-tz*60000)
-        .toISOString().slice(0,16);
-    }
-    datetimeEl.value = nowLocal();
-
-    const toDMS = v=>{
-      const deg = Math.floor(v),
-            min = Math.floor((v-deg)*60),
-            sec = Math.round((v-deg-min/60)*3600);
-      return `${deg}°${min}'${sec}"`;
-    };
-
-    function showErrors(arr){
-      errorsDiv.innerHTML = `<ul>${arr.map(e=>`<li>${e}</li>`).join('')}</ul>`;
-    }
-    function clearErrors(){ errorsDiv.innerHTML = ''; }
-
-    // remplir points
-    for(let i=1;i<=40;i++){
-      pointSelect.add(new Option(`P${i}`,`P${i}`));
-    }
-    pointSelect.addEventListener('change', ()=>{
-      btnSave.textContent = pointSelect.value? `Enregistrer ${pointSelect.value}` : 'Enregistrer';
+    // bind boutons photos
+    photo1Btn.addEventListener('click', () => photo1.click());
+    photo2Btn.addEventListener('click', () => photo2.click());
+    photo1.addEventListener('change', async () => {
+      images[0] = await processFile(photo1.files[0], 0);
+      photo1Btn.classList.add('filled');
+      if (images[1] && lastSatB64) btnExport.disabled = false;
+    });
+    photo2.addEventListener('change', async () => {
+      images[1] = await processFile(photo2.files[0], 1);
+      photo2Btn.classList.add('filled');
+      if (images[0] && lastSatB64) btnExport.disabled = false;
     });
 
-    // géoloc + OSM + DMS
-    let lastSatB64 = null;
-    btnGeo.addEventListener('click', ()=>{
+    // --- Géoloc + adresse + DMS + vue satellite ---
+    btnGeo.addEventListener('click', () => {
       clearErrors();
-      if(!navigator.geolocation){
+      if (!navigator.geolocation) {
         return showErrors(['Géolocalisation non supportée']);
       }
-      navigator.geolocation.getCurrentPosition(async pos=>{
-        const {latitude, longitude} = pos.coords;
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const { latitude, longitude } = pos.coords;
+        // OSM reverse
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
         );
         const d = await res.json(), a = d.address||{};
-        addressEl.value =
-          `${a.house_number||''} ${a.road||''}`.trim()
-          + ', ' + (a.city||a.town||a.village||a.county||'');
+        addressEl.value = `${a.house_number||''} ${a.oad||''}`.trim()
+                          + ', ' + (a.city||a.town||a.village||a.county||'');
         latEl.value = toDMS(latitude);
         lngEl.value = toDMS(longitude);
         // satellite
-        lastSatB64 = await fetchSat(latitude, longitude);
-      }, e=> showErrors([`Erreur position : ${e.message}`]));
+        lastSatB64 = await (async () => {
+          const reqW = TARGET_W, reqH = TARGET_H*2, zoom = 17;
+          const url =
+            `https://maps.googleapis.com/maps/api/staticmap`
+            + `?center=${latitude},${longitude}`
+            + `&markers=color:red|${latitude},${longitude}`
+            + `&scale=2`
+            + `&zoom=${zoom}`
+            + `&size=${reqW}x${reqH}`
+            + `&maptype=satellite`
+            + `&key=AIzaSyCbP5xIyt4PCn-tzJpr3sOJd2BO7gV43-w`;
+          const img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.src = url;
+          await img.decode();
+          const c = document.createElement('canvas');
+          c.width = TARGET_W; c.height = TARGET_H;
+          const cx = c.getContext('2d');
+          cx.drawImage(img, 0, 0, reqW, TARGET_H, 0, 0, TARGET_W, TARGET_H);
+          return c.toDataURL('image/png').split(',')[1];
+        })();
+        if (images[0] && images[1]) btnExport.disabled = false;
+      }, e => showErrors([`Erreur position : ${e.message}`]));
     });
 
-    async function fetchSat(lat, lon){
-      const pxPerCm = 96/2.54;
-      const targetW = Math.round(5.25*pxPerCm),
-            targetH = Math.round(7*pxPerCm);
-      const reqW = targetW, reqH = targetH*2, zoom = 17;
-      const url =
-        `https://maps.googleapis.com/maps/api/staticmap`
-        + `?center=${lat},${lon}`
-        + `&markers=color:red|${lat},${lon}`
-        + `&scale=2`
-        + `&zoom=${zoom}`
-        + `&size=${reqW}x${reqH}`
-        + `&maptype=satellite`
-        + `&key=AIzaSyCbP5xIyt4PCn-tzJpr3sOJd2BO7gV43-w`;
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.src = url;
-      await img.decode();
-      const c = document.createElement('canvas');
-      c.width = targetW; c.height = targetH;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(img, 0, 0, reqW, targetH, 0, 0, targetW, targetH);
-      return c.toDataURL('image/png').split(',')[1];
-    }
-
-    // sauvegarde en mémoire
-    btnSave.addEventListener('click', ()=>{
+    // --- Sauvegarde local des données ---
+    btnSave.addEventListener('click', () => {
       clearErrors();
       const errs = [];
-      if(!pointSelect.value)             errs.push('Sélectionner un point.');
-      if(!typologySelect.value)          errs.push('Sélectionner une typologie.');
-      if(!datetimeEl.value)              errs.push('Date & heure requises.');
-      if(!no2El.value && !c6h6El.value && !pm10El.value)
-                                         errs.push('Au moins une mesure de capteur.');
-      if(!images[0] || !images[1])        errs.push('Les deux photos sont obligatoires.');
-      if(!lastSatB64)                    errs.push('Vue satellite manquante (cliquez sur « Obtenir adresse »).');
-      if(errs.length) return showErrors(errs);
+      if (!pointSelect.value)            errs.push('Sélectionner un point.');
+      if (!typologySelect.value)         errs.push('Sélectionner une typologie.');
+      if (!datetimeEl.value)             errs.push('Date & heure requises.');
+      if (!no2El.value && !c6h6El.value && !pm10El.value)
+                                          errs.push('Au moins une mesure de capteur.');
+      if (!images[0] || !images[1])       errs.push('Les deux photos sont obligatoires.');
+      if (!lastSatB64)                   errs.push('Vue satellite manquante (cliquer sur « Obtenir adresse »).');
+      if (errs.length) return showErrors(errs);
 
       points[pointSelect.value] = {
         typology: typologySelect.value,
@@ -360,6 +360,7 @@
         img2:     images[1],
         sat:      lastSatB64
       };
+
       // reset UI
       pointSelect.value = '';
       typologySelect.value = '';
@@ -368,81 +369,81 @@
       datetimeEl.value = nowLocal();
       photo1Btn.classList.remove('filled');
       photo2Btn.classList.remove('filled');
-      images = []; lastSatB64 = null;
+      images = [null,null]; lastSatB64 = null;
       btnSave.textContent = 'Enregistrer';
       clearErrors();
-      alert(`Données ${pointSelect.value || ''} enregistrées !`);
-      btnExport.disabled = false;
+      alert('Données enregistrées !');
     });
 
-    // --- Export complet XLSX (données + photos + sat) ---
-    btnExport.addEventListener('click', async ()=>{
-      if(!confirm('Tu es sûr ? Sauvegarder réinitialise l’app.')) return;
+    // --- Export XLSX ---
+    btnExport.addEventListener('click', async () => {
+      if (!confirm('Tu es sûr ? Sauvegarder réinitialise l’app.')) return;
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet('Mesures');
 
-      // colonnes
+      // colonnes avant images
       ws.columns = [
-        {header:'Point',       key:'point',    width:10},
-        {header:'Typologie',   key:'typology', width:15},
-        {header:'Adresse',     key:'address',  width:30},
-        {header:'Lat DMS',     key:'lat',      width:15},
-        {header:'Lng DMS',     key:'lng',      width:15},
-        {header:'NO₂',         key:'no2',      width:10},
-        {header:'C₆H₆',        key:'c6h6',     width:10},
-        {header:'PM₁₀',        key:'pm10',     width:10},
-        {header:'DateHeure',   key:'datetime', width:20},
+        { header:'Point',       key:'point',    width:10 },
+        { header:'Typologie',   key:'typology', width:15 },
+        { header:'Adresse',     key:'address',  width:30 },
+        { header:'Lat DMS',     key:'lat',      width:15 },
+        { header:'Lng DMS',     key:'lng',      width:15 },
+        { header:'NO₂',         key:'no2',      width:10 },
+        { header:'C₆H₆',        key:'c6h6',     width:10 },
+        { header:'PM₁₀',        key:'pm10',     width:10 },
+        { header:'DateHeure',   key:'datetime', width:20, style:{ numFmt:'dd/mm/yy hh:mm' } },
+        // colonnes images 5,5 cm
+        { header:'Photo 1',     key:'photo1',   width:IMG_COL_WIDTH },
+        { header:'Photo 2',     key:'photo2',   width:IMG_COL_WIDTH },
+        { header:'Vue sat.',    key:'sat',      width:IMG_COL_WIDTH }
       ];
-      ws.getColumn('datetime').numFmt = 'dd/mm/yy hh:mm';
 
-      // taille image en px
-      const imgW = TARGET_W, imgH = TARGET_H;
-      let rowIndex = 2;
-
-      for (const [pt, p] of Object.entries(points)) {
+      let rowIdx = 2;
+      for (const [pt,p] of Object.entries(points)) {
         ws.addRow({
-          point: pt,
-          typology: p.typology,
-          address: p.address,
-          lat: p.lat,
-          lng: p.lng,
-          no2: p.no2,
-          c6h6: p.c6h6,
-          pm10: p.pm10,
-          datetime: new Date(p.datetime)
+          point:     pt,
+          typology:  p.typology,
+          address:   p.address,
+          lat:       p.lat,
+          lng:       p.lng,
+          no2:       p.no2,
+          c6h6:      p.c6h6,
+          pm10:      p.pm10,
+          datetime:  new Date(p.datetime)
         });
-        ws.getRow(rowIndex).height = imgH * 0.75;
+        ws.getRow(rowIdx).height = TARGET_H * 0.75;
 
         // Photo 1
         if (p.img1) {
-          const imgId1 = wb.addImage({ buffer: p.img1, extension:'png' });
-          ws.addImage(imgId1, {
-            tl: { col:5, row:rowIndex-1 },
-            ext: { width: imgW, height: imgH }
+          const id1 = wb.addImage({ buffer: p.img1, extension:'png' });
+          ws.addImage(id1, {
+            tl:  { col: 9, row: rowIdx-1 },
+            ext: { width: TARGET_W, height: TARGET_H }
           });
         }
         // Photo 2
         if (p.img2) {
-          const imgId2 = wb.addImage({ buffer: p.img2, extension:'png' });
-          ws.addImage(imgId2, {
-            tl: { col:6, row:rowIndex-1 },
-            ext: { width: imgW, height: imgH }
+          const id2 = wb.addImage({ buffer: p.img2, extension:'png' });
+          ws.addImage(id2, {
+            tl:  { col:10, row: rowIdx-1 },
+            ext: { width: TARGET_W, height: TARGET_H }
           });
         }
-        // Satellite (base64)
+        // Vue sat.
         if (p.sat) {
-          const imgId3 = wb.addImage({ base64: p.sat, extension:'png' });
-          ws.addImage(imgId3, {
-            tl: { col:7, row:rowIndex-1 },
-            ext: { width: imgW, height: imgH }
+          const id3 = wb.addImage({ base64: p.sat, extension:'png' });
+          ws.addImage(id3, {
+            tl:  { col:11, row: rowIdx-1 },
+            ext: { width: TARGET_W, height: TARGET_H }
           });
         }
-        rowIndex++;
+        rowIdx++;
       }
 
-      // écriture et téléchargement
+      // write & download
       const buf = await wb.xlsx.writeBuffer();
       saveAs(new Blob([buf]), `${affaireEl.value||'Sans_affaire'}_Fiche_de_points_de_mesure.xlsx`);
+
       // reset et reload
       Object.keys(points).forEach(k=>delete points[k]);
       location.reload();
