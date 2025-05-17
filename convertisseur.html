@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Airea | Convertisseur</title>
+  <style>
+    :root {
+      --primary: #003a80;
+      --bg: #f5f7fa;
+      --text: #333;
+      --card-bg: #fff;
+      --radius: 8px;
+      --transition: 0.3s;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header, footer {
+      background: var(--primary);
+      color: #fff;
+      text-align: center;
+      padding: 1rem;
+    }
+    main {
+      flex: 1;
+      padding: 1rem;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1rem;
+    }
+    label {
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    input, select {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: var(--radius);
+      transition: border var(--transition);
+    }
+    input:focus, select:focus { border-color: var(--primary); outline: none; }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.75rem;
+      width: 100%;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    button:hover { background: #00275a; }
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .result-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 0.75rem;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    @media (max-width: 400px) {
+      .results { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Airea | Convertisseur</h1>
+  </header>
+  <main>
+    <div class="card">
+      <div class="form-group">
+        <label for="pollutant">Polluant</label>
+        <select id="pollutant">
+          <option value="46.0055">NO₂</option>
+          <option value="30.0061">NO</option>
+          <option value="28.01">CO</option>
+          <option value="44.01">CO₂</option>
+          <option value="78.11">Benzène</option>
+          <option value="34.08">H₂S</option>
+          <option value="17.031">NH₃</option>
+          <option value="0">Autre...</option>
+        </select>
+        <input type="number" id="customM" placeholder="Masse molaire (g/mol)" style="display:none; margin-top:0.5rem;" />
+      </div>
+      <div class="form-group">
+        <label for="temp">Température (°C)</label>
+        <input type="number" id="temp" value="20" />
+      </div>
+      <div class="form-group">
+        <label for="press">Pression (hPa)</label>
+        <input type="number" id="press" value="1013" />
+      </div>
+      <div class="form-group">
+        <label for="inputVal">Concentration</label>
+        <input type="number" id="inputVal" placeholder="Entrez valeur" />
+        <select id="inputUnit" style="margin-top:0.5rem;">
+          <option value="ugm3">µg/m³</option>
+          <option value="mgm3">mg/m³</option>
+          <option value="ppb">ppb</option>
+          <option value="ppm">ppm</option>
+        </select>
+      </div>
+      <button id="convertBtn">Convertir</button>
+    </div>
+    <div class="results" id="results"></div>
+  </main>
+  <footer>
+    &copy; 2025 Airea
+  </footer>
+  <script>
+    const pollutant = document.getElementById('pollutant');
+    const customM = document.getElementById('customM');
+    pollutant.addEventListener('change', () => {
+      if (pollutant.value === '0') customM.style.display = 'block';
+      else customM.style.display = 'none';
+    });
+
+    document.getElementById('convertBtn').addEventListener('click', () => {
+      const M = pollutant.value === '0' ? parseFloat(customM.value) : parseFloat(pollutant.value);
+      if (!M || M <= 0) return alert('Veuillez saisir une masse molaire valide.');
+      const T = parseFloat(document.getElementById('temp').value) + 273.15;
+      const P = parseFloat(document.getElementById('press').value) * 100;
+      const cVal = parseFloat(document.getElementById('inputVal').value);
+      const unit = document.getElementById('inputUnit').value;
+      if (isNaN(cVal)) return alert('Entrez une concentration valide.');
+
+      const R = 8.314; // J/mol·K
+      let ugm3, mgm3, ppm, ppb;
+
+      // Normalize to µg/m³
+      switch(unit) {
+        case 'ugm3': ugm3 = cVal; break;
+        case 'mgm3': ugm3 = cVal * 1000; break;
+        case 'ppm': ugm3 = (cVal * M * P) / (R * T) * 1e6; break;
+        case 'ppb': ugm3 = (cVal/1000 * M * P) / (R * T) * 1e6; break;
+      }
+      mgm3 = ugm3 / 1000;
+      ppm = (ugm3 * R * T) / (M * P);
+      ppb = ppm * 1000;
+
+      const out = [
+        {label: 'µg/m³', value: ugm3.toFixed(3)},
+        {label: 'mg/m³', value: mgm3.toFixed(6)},
+        {label: 'ppm', value: ppm.toFixed(6)},
+        {label: 'ppb', value: ppb.toFixed(3)}
+      ].filter(o => o.label !== document.getElementById('inputUnit').selectedOptions[0].text);
+
+      const resDiv = document.getElementById('results');
+      resDiv.innerHTML = '';
+      out.forEach(o => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.innerHTML = `<strong>${o.value}</strong><br>${o.label}`;
+        resDiv.appendChild(card);
+      });
+    });
+  </script>
+</body>
+</html>
