@@ -11,6 +11,7 @@
       --card-bg: #fff;
       --radius: 8px;
       --transition: 0.3s;
+      --error: #d9534f;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -50,6 +51,7 @@
       display: flex;
       flex-direction: column;
       margin-bottom: 1rem;
+      position: relative;
     }
     label {
       margin-bottom: 0.5rem;
@@ -62,6 +64,11 @@
       transition: border var(--transition);
     }
     input:focus, select:focus { border-color: var(--primary); outline: none; }
+    .error {
+      color: var(--error);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
     button {
       background: var(--primary);
       color: #fff;
@@ -100,6 +107,7 @@
       <div class="form-group">
         <label for="pollutant">Polluant</label>
         <select id="pollutant">
+          <option value="" disabled selected>Choisir...</option>
           <option value="46.0055">NO₂</option>
           <option value="30.0061">NO</option>
           <option value="28.01">CO</option>
@@ -110,6 +118,7 @@
           <option value="0">Autre...</option>
         </select>
         <input type="number" id="customM" placeholder="Masse molaire (g/mol)" style="display:none; margin-top:0.5rem;" />
+        <span class="error" id="molarErr"></span>
       </div>
       <div class="form-group">
         <label for="temp">Température (°C)</label>
@@ -128,16 +137,17 @@
           <option value="ppb">ppb</option>
           <option value="ppm">ppm</option>
         </select>
+        <span class="error" id="concErr"></span>
       </div>
       <div class="form-group">
-        <label for="sigfig">Chiffres significatifs</label>
+        <label for="sigfig">Décimales après la virgule</label>
         <select id="sigfig">
+          <option value="0">0</option>
           <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3" selected>3</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
           <option value="4">4</option>
           <option value="5">5</option>
-          <option value="6">6</option>
         </select>
       </div>
       <button id="convertBtn">Convertir</button>
@@ -150,17 +160,30 @@
   <script>
     const pollutant = document.getElementById('pollutant');
     const customM = document.getElementById('customM');
+    const molarErr = document.getElementById('molarErr');
+    const concErr = document.getElementById('concErr');
     pollutant.addEventListener('change', () => {
+      molarErr.textContent = '';
       customM.style.display = pollutant.value === '0' ? 'block' : 'none';
     });document.getElementById('convertBtn').addEventListener('click', () => {
-  const M = pollutant.value === '0' ? parseFloat(customM.value) : parseFloat(pollutant.value);
-  if (!M || M <= 0) return alert('Veuillez saisir une masse molaire valide.');
+  molarErr.textContent = '';
+  concErr.textContent = '';
+  const M = pollutant.value === '0'
+    ? parseFloat(customM.value)
+    : parseFloat(pollutant.value);
+  if (!M || M <= 0) {
+    molarErr.textContent = 'Masse molaire invalide.';
+    return;
+  }
   const T = parseFloat(document.getElementById('temp').value) + 273.15;
   const P = parseFloat(document.getElementById('press').value) * 100;
   const cVal = parseFloat(document.getElementById('inputVal').value);
+  if (isNaN(cVal)) {
+    concErr.textContent = 'Concentration invalide.';
+    return;
+  }
   const unit = document.getElementById('inputUnit').value;
-  const sig = parseInt(document.getElementById('sigfig').value, 10);
-  if (isNaN(cVal)) return alert('Entrez une concentration valide.');
+  const dec = parseInt(document.getElementById('sigfig').value, 10);
 
   const R = 8.314;
   let ugm3;
@@ -183,7 +206,7 @@
 
   const out = values
     .filter(o => o.label !== document.getElementById('inputUnit').selectedOptions[0].text)
-    .map(o => ({ label: o.label, value: Number(o.value).toPrecision(sig) }));
+    .map(o => ({ label: o.label, value: o.value.toFixed(dec) }));
 
   const resDiv = document.getElementById('results');
   resDiv.innerHTML = '';
