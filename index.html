@@ -7,7 +7,6 @@
   <style>
     /* Reset minimal */
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    /* Layout principal en flex-colonne pleine hauteur */
     body {
       font-family: Arial, sans-serif;
       display: flex;
@@ -19,24 +18,21 @@
       color: #fff;
       text-align: center;
     }
-    /* header compact */
     header {
       padding: 0.5rem;
     }
     header img.logo {
       height: 40px;
     }
-    /* Main remplit l'espace restant */
     main {
       flex: 1;
       padding: 2rem;
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
     }
-    /* effet “courant électrique” */
     .box-wrapper {
       position: relative;
       border-radius: 12px;
@@ -53,34 +49,51 @@
     @keyframes electric {
       0%,100% {
         border-color: rgba(0,172,237,0.6);
-        box-shadow: 0 0 8px rgba(0,172,237,0.6), 0 0 16px rgba(0,58,128,0.4);
+        box-shadow: 0 0 8px rgba(0,172,237,0.6),0 0 16px rgba(0,58,128,0.4);
       }
       50% {
         border-color: rgba(0,172,237,1);
-        box-shadow: 0 0 4px rgba(0,172,237,1), 0 0 12px rgba(0,58,128,0.6);
+        box-shadow: 0 0 4px rgba(0,172,237,1),0 0 12px rgba(0,58,128,0.6);
       }
     }
     .box {
-      position: relative;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      padding: 1.2rem;
-      text-align: center;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      min-height: 100px;
-      z-index: 1;
+      padding: 1.5rem;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      color: inherit;
+      text-align: center;
+      min-height: 200px;
+      position: relative;
+      z-index: 1;
     }
-    .box:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    .box h3 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: #003a80;
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+    }
+    .btn {
+      display: block;
+      padding: 0.6rem 1rem;
+      background: #eaf6ff;
+      border: 1px solid #00aced;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #003a80;
+      font-weight: bold;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn:hover {
+      background: #d0edff;
+      transform: translateY(-2px);
     }
     footer {
       padding: 1rem;
@@ -89,7 +102,7 @@
       font-size: 0.9rem;
     }
     @media (max-width: 600px) {
-      .box { font-size: 0.9rem; }
+      .box { min-height: 180px; }
       header img.logo { height: 35px; }
     }
   </style>
@@ -119,49 +132,55 @@
 
   <main>
     <div class="grid">
-      <!-- Projet : Outil JDN -->
-      <a class="box-wrapper" href="https://www.airea-air.com/jdn.html" target="_blank">
-        <div class="box">Outil JDN (en ligne)</div>
-      </a>
-      <a class="box-wrapper" href="jdn.html" download="jdn.html">
-        <div class="box">Télécharger l'outil JDN hors-ligne</div>
-      </a>
-      <a class="box-wrapper" href="presentation-jdn.html" target="_blank">
-        <div class="box">Présentation du projet</div>
-      </a>
 
-      <!-- Projet : Outil FDP -->
-      <a class="box-wrapper" href="https://www.airea-air.com/fiche-de-points.html" target="_blank">
-        <div class="box">Fiche de points (en ligne)</div>
-      </a>
-      <a class="box-wrapper" href="fiche-de-points.html" download="fiche-de-points.html">
-        <div class="box">Télécharger l'outil FDP hors-ligne</div>
-      </a>
-      <a class="box-wrapper" href="fiche-de-points-explain.html" target="_blank">
-        <div class="box">Présentation du projet</div>
-      </a>
+      <!-- Outil JDN -->
+      <div class="box-wrapper">
+        <div class="box">
+          <h3>Outil JDN</h3>
+          <div class="buttons">
+            <a class="btn" href="https://www.airea-air.com/jdn.html" target="_blank">Accès en ligne</a>
+            <a class="btn" href="jdn.html" download="jdn.html">Télécharger le HTML</a>
+            <a class="btn" href="jdn-explain.html" target="_blank">Présentation du projet</a>
+          </div>
+        </div>
+      </div>
 
-      <!-- Projet : Vue satellite (test) -->
-      <a class="box-wrapper" href="https://www.airea-air.com/fiche-de-points-test.html" target="_blank">
-        <div class="box">Vue satellite (En ligne)</div>
-      </a>
-      <a class="box-wrapper" href="fiche-de-points-test.html" download="fiche-de-points-test.html">
-        <div class="box">Télécharger Vue satellite</div>
-      </a>
-      <a class="box-wrapper" href="presentation-satellite.html" target="_blank">
-        <div class="box">Présentation Vue satellite</div>
-      </a>
+      <!-- Fiche de points -->
+      <div class="box-wrapper">
+        <div class="box">
+          <h3>Fiche de points</h3>
+          <div class="buttons">
+            <a class="btn" href="https://www.airea-air.com/fiche-de-points.html" target="_blank">Accès en ligne</a>
+            <a class="btn" href="fiche-de-points.html" download="fiche-de-points.html">Télécharger le HTML</a>
+            <a class="btn" href="fiche-de-points-explain.html" target="_blank">Présentation du projet</a>
+          </div>
+        </div>
+      </div>
 
-      <!-- Projet : Photos droites (test) -->
-      <a class="box-wrapper" href="https://www.airea-air.com/xlsx-test.html" target="_blank">
-        <div class="box">Photos droites (En ligne)</div>
-      </a>
-      <a class="box-wrapper" href="xlsx-test.html" download="xlsx-test.html">
-        <div class="box">Télécharger Photos droites</div>
-      </a>
-      <a class="box-wrapper" href="presentation-photos.html" target="_blank">
-        <div class="box">Présentation Photos droites</div>
-      </a>
+      <!-- Vue satellite (test) -->
+      <div class="box-wrapper">
+        <div class="box">
+          <h3>Vue satellite</h3>
+          <div class="buttons">
+            <a class="btn" href="https://www.airea-air.com/fiche-de-points-test.html" target="_blank">Accès en ligne</a>
+            <a class="btn" href="fiche-de-points-test.html" download="fiche-de-points-test.html">Télécharger le HTML</a>
+            <a class="btn" href="satellite-project-explain.html" target="_blank">Présentation du projet</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photos droites (test) -->
+      <div class="box-wrapper">
+        <div class="box">
+          <h3>Photos droites</h3>
+          <div class="buttons">
+            <a class="btn" href="https://www.airea-air.com/xlsx-test.html" target="_blank">Accès en ligne</a>
+            <a class="btn" href="xlsx-test.html" download="xlsx-test.html">Télécharger le HTML</a>
+            <a class="btn" href="photos-project-explain.html" target="_blank">Présentation du projet</a>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 
