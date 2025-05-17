@@ -4,28 +4,67 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Airea | Outil JDN | Présentation</title>
-  
   <style>
-    body {margin: 0;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;color: #333;line-height: 1.6;}
-    header, footer {background-color: #003a80;color: #fff;text-align: center;padding: 1rem;}
-    main {max-width: 800px;margin: 2rem auto;padding: 0 1rem;}
-    h1 {margin: 0;font-size: 1.5rem;}
-    h2 {margin-top: 2rem;font-size: 1.25rem;font-weight: bold;border-bottom: 2px solid #eee;padding-bottom: 0.25rem;}
-    h3 {margin-top: 1rem;font-size: 1.1rem;font-weight: bold;}
-    p {margin: 1rem 0;}
-    ul, ol {margin: 0.5rem 0 1rem 1.5rem;}
-    li {margin: 0.5rem 0;}
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+      line-height: 1.6;
+    }
+    header, footer {
+      background-color: #003a80;
+      color: #fff;
+      text-align: center;
+      padding: 0.5rem;
+    }
+    header img {
+      display: block;
+      margin: 0 auto;
+      height: 50px;
+    }
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    h1 {
+      margin: 1rem 0;
+      font-size: 1.5rem;
+      color: #003a80;
+      text-align: center;
+    }
+    h2 {
+      margin-top: 2rem;
+      font-size: 1.25rem;
+      font-weight: bold;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 0.25rem;
+    }
+    h3 {
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+    p {
+      margin: 1rem 0;
+    }
+    ul, ol {
+      margin: 0.5rem 0 1rem 1.5rem;
+    }
+    li {
+      margin: 0.5rem 0;
+    }
   </style>
 </head>
-  
 <body>
   <header>
-    <h1>Airea | Outil FDP | Présentation</h1>
+    <img src="https://raw.githubusercontent.com/airea-air/airea-air.github.io/refs/heads/main/Logo_Airea_tools.svg" alt="Logo Airea">
   </header>
   <main>
+    <h1>Airea | Outil JDN | Présentation</h1>
     <h2>Contexte et objectif du projet</h2>
     <p>Dans le cadre de campagnes de mesures olfactives en environnement extérieur (e.g., nuisances odorantes), l'application "Airea | Jury de nez" a été conçue pour digitaliser et structurer la saisie des observations réalisées par un jury de professionnels. Ces observations, historiquement notées sur papier, concernent l’intensité perçue de différentes catégories d’odeurs, la direction et vitesse du vent, ainsi que des commentaires contextuels.</p>
-    <p><strong>L’application vise à :</strong></p>
+    <p><strong>L’application vise à :</strong></p>
     <ul>
       <li>Structurer les données collectées par les jurés sur le terrain.</li>
       <li>Améliorer la qualité, la fiabilité et la traçabilité des mesures.</li>
@@ -36,17 +75,17 @@
     <p>L'application a été développée en HTML / CSS / JavaScript pur, sans framework lourd, pour maximiser la légèreté, la rapidité et la compatibilité avec des navigateurs mobiles. Elle est entièrement client-side, sans serveur ni base de données, les données étant persistées localement via <code>localStorage</code> dans le navigateur. L’export Excel se fait via la bibliothèque SheetJS (<code>xlsx.js</code>).</p>
     <h2>Structure du code et organisation fonctionnelle</h2>
     <h3>1) Interface utilisateur (HTML/CSS)</h3>
-    <p><strong>En-tête (&lt;header&gt;)</strong> : Affiche le titre de l’application et permet au juré de sélectionner son nom (persisté dans <code>localStorage</code>).</p>
-    <p><strong>Formulaire principal (&lt;main&gt;)</strong> :</p>
+    <p><strong>En-tête (&lt;header&gt;)</strong> : Affiche le logo de l’application centré.</p>
+    <p><strong>Formulaire principal (&lt;main&gt;)</strong> :</p>
     <ul>
       <li>Choix du point de mesure (P1 à P20).</li>
       <li>Bouton réinitialiser le formulaire.</li>
       <li>Sélection de la session (AM/PM) et de l’heure.</li>
       <li>Saisie des conditions de vent.</li>
-      <li>Saisie de l’intensité olfactive selon 10 catégories prédéfinies pour deux modes : "Continu" et "Bouffées".</li>
+      <li>Saisie de l’intensité olfactive selon 10 catégories prédéfinies pour deux modes : "Continu" et "Bouffées".</li>
       <li>Zone de commentaire libre.</li>
     </ul>
-    <p><strong>Pied de page (&lt;footer&gt;)</strong> :</p>
+    <p><strong>Pied de page (&lt;footer&gt;)</strong> :</p>
     <ul>
       <li>Bouton pour enregistrer ou mettre à jour la mesure.</li>
       <li>Bouton pour exporter l’ensemble des données au format Excel.</li>
@@ -56,16 +95,16 @@
       <li>Initialisation de la sélection juré via <code>localStorage</code>.</li>
       <li>Remplissage dynamique des points de mesure (P1 à P20) à l’ouverture.</li>
       <li>Catégories d’odeurs définies dans un tableau d’objets avec nom, code et couleur d’arrière-plan.</li>
-      <li>Événements utilisateur :</li>
+      <li>Événements utilisateur :</li>
       <ul>
-        <li>Changement de point/session : charge les données existantes si présentes.</li>
-        <li>Saisie : marque le formulaire comme "non sauvegardé".</li>
-        <li>Bouton réinitialiser : remet à zéro les champs, après confirmation si besoin.</li>
-        <li>Bouton enregistrer : sauvegarde une ligne dans un dictionnaire <code>dataMap</code>, avec une clé <code>point_session</code>, persisté dans <code>localStorage</code>.</li>
-        <li>Bouton exporter : transforme <code>dataMap</code> en tableau Excel, avec ligne d’en-tête, via <code>XLSX.js</code>, et télécharge le fichier.</li>
+        <li>Changement de point/session : charge les données existantes si présentes.</li>
+        <li>Saisie : marque le formulaire comme “non sauvegardé”.</li>
+        <li>Bouton réinitialiser : remet à zéro les champs, après confirmation si besoin.</li>
+        <li>Bouton enregistrer : sauvegarde une ligne dans un dictionnaire <code>dataMap</code>, avec une clé <code>point_session</code>, persisté dans <code>localStorage</code>.</li>
+        <li>Bouton exporter : transforme <code>dataMap</code> en tableau Excel, avec ligne d’en-tête, via <code>XLSX.js</code>, et télécharge le fichier.</li>
       </ul>
     </ul>
-    <h2>Pistes d’amélioration future (R&D)</h2>
+    <h2>Axes d’amélioration (en cours)</h2>
     <ul>
       <li>Ajout de géolocalisation automatique du point de mesure (API GPS navigateur).</li>
       <li>Stockage distant via API ou base de données cloud (Firebase, Supabase) pour usage collaboratif en temps réel.</li>
