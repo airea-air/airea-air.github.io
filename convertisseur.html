@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
+<!DOCTYPE html><html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,8 +25,13 @@
       background: var(--primary);
       color: #fff;
       text-align: center;
-      padding: 1rem;
+      padding: 0.5rem;
     }
+    header h1 {
+      font-size: 1.25rem;
+      margin: 0;
+    }
+    footer { font-size: 0.875rem; }
     main {
       flex: 1;
       padding: 1rem;
@@ -125,6 +129,17 @@
           <option value="ppm">ppm</option>
         </select>
       </div>
+      <div class="form-group">
+        <label for="sigfig">Chiffres significatifs</label>
+        <select id="sigfig">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
       <button id="convertBtn">Convertir</button>
     </div>
     <div class="results" id="results"></div>
@@ -136,49 +151,50 @@
     const pollutant = document.getElementById('pollutant');
     const customM = document.getElementById('customM');
     pollutant.addEventListener('change', () => {
-      if (pollutant.value === '0') customM.style.display = 'block';
-      else customM.style.display = 'none';
-    });
+      customM.style.display = pollutant.value === '0' ? 'block' : 'none';
+    });document.getElementById('convertBtn').addEventListener('click', () => {
+  const M = pollutant.value === '0' ? parseFloat(customM.value) : parseFloat(pollutant.value);
+  if (!M || M <= 0) return alert('Veuillez saisir une masse molaire valide.');
+  const T = parseFloat(document.getElementById('temp').value) + 273.15;
+  const P = parseFloat(document.getElementById('press').value) * 100;
+  const cVal = parseFloat(document.getElementById('inputVal').value);
+  const unit = document.getElementById('inputUnit').value;
+  const sig = parseInt(document.getElementById('sigfig').value, 10);
+  if (isNaN(cVal)) return alert('Entrez une concentration valide.');
 
-    document.getElementById('convertBtn').addEventListener('click', () => {
-      const M = pollutant.value === '0' ? parseFloat(customM.value) : parseFloat(pollutant.value);
-      if (!M || M <= 0) return alert('Veuillez saisir une masse molaire valide.');
-      const T = parseFloat(document.getElementById('temp').value) + 273.15;
-      const P = parseFloat(document.getElementById('press').value) * 100;
-      const cVal = parseFloat(document.getElementById('inputVal').value);
-      const unit = document.getElementById('inputUnit').value;
-      if (isNaN(cVal)) return alert('Entrez une concentration valide.');
+  const R = 8.314;
+  let ugm3;
+  switch(unit) {
+    case 'ugm3': ugm3 = cVal; break;
+    case 'mgm3': ugm3 = cVal * 1000; break;
+    case 'ppm': ugm3 = (cVal * M * P) / (R * T) * 1e6; break;
+    case 'ppb': ugm3 = (cVal/1000 * M * P) / (R * T) * 1e6; break;
+  }
+  const mgm3 = ugm3 / 1000;
+  const ppm = (ugm3 * R * T) / (M * P);
+  const ppb = ppm * 1000;
 
-      const R = 8.314; // J/mol·K
-      let ugm3, mgm3, ppm, ppb;
+  const values = [
+    {label: 'µg/m³', value: ugm3},
+    {label: 'mg/m³', value: mgm3},
+    {label: 'ppm', value: ppm},
+    {label: 'ppb', value: ppb}
+  ];
 
-      // Normalize to µg/m³
-      switch(unit) {
-        case 'ugm3': ugm3 = cVal; break;
-        case 'mgm3': ugm3 = cVal * 1000; break;
-        case 'ppm': ugm3 = (cVal * M * P) / (R * T) * 1e6; break;
-        case 'ppb': ugm3 = (cVal/1000 * M * P) / (R * T) * 1e6; break;
-      }
-      mgm3 = ugm3 / 1000;
-      ppm = (ugm3 * R * T) / (M * P);
-      ppb = ppm * 1000;
+  const out = values
+    .filter(o => o.label !== document.getElementById('inputUnit').selectedOptions[0].text)
+    .map(o => ({ label: o.label, value: Number(o.value).toPrecision(sig) }));
 
-      const out = [
-        {label: 'µg/m³', value: ugm3.toFixed(3)},
-        {label: 'mg/m³', value: mgm3.toFixed(6)},
-        {label: 'ppm', value: ppm.toFixed(6)},
-        {label: 'ppb', value: ppb.toFixed(3)}
-      ].filter(o => o.label !== document.getElementById('inputUnit').selectedOptions[0].text);
+  const resDiv = document.getElementById('results');
+  resDiv.innerHTML = '';
+  out.forEach(o => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.innerHTML = `<strong>${o.value}</strong><br>${o.label}`;
+    resDiv.appendChild(card);
+  });
+});
 
-      const resDiv = document.getElementById('results');
-      resDiv.innerHTML = '';
-      out.forEach(o => {
-        const card = document.createElement('div');
-        card.className = 'result-card';
-        card.innerHTML = `<strong>${o.value}</strong><br>${o.label}`;
-        resDiv.appendChild(card);
-      });
-    });
   </script>
 </body>
 </html>
