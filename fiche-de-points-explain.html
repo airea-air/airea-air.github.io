@@ -1,0 +1,82 @@
+Note technique – Application "Airea | Jury de nez"
+
+Contexte et objectif du projet
+
+Dans le cadre de campagnes de mesures olfactives en environnement extérieur (e.g., nuisances odorantes), l'application "Airea | Jury de nez" a été conçue pour digitaliser et structurer la saisie des observations réalisées par un jury de professionnels. Ces observations, historiquement notées sur papier, concernent l’intensité perçue de différentes catégories d’odeurs, la direction et vitesse du vent, ainsi que des commentaires contextuels.
+
+L’application vise à :
+
+- Structurer les données collectées par les jurés sur le terrain.
+
+- Améliorer la qualité, la fiabilité et la traçabilité des mesures.
+
+- Simplifier l’exploitation des données via une exportation en tableur (.xlsx).
+
+- Assurer une utilisation rapide et intuitive sur mobile.
+
+Choix techniques et architecture
+
+L'application a été développée en HTML / CSS / JavaScript pur, sans framework lourd, pour maximiser la légèreté, la rapidité et la compatibilité avec des navigateurs mobiles.
+
+Elle est entièrement client-side, sans serveur ni base de données, les données étant persistées localement via localStorage dans le navigateur. L’export Excel se fait via la bibliothèque SheetJS (xlsx.js).
+
+Structure du code et organisation fonctionnelle
+
+Voici une description des grandes parties du code et de leur rôle :
+
+1) Interface utilisateur (HTML/CSS)
+
+En-tête (<header>) : Affiche le titre de l’application et permet au juré de sélectionner son nom (persisté dans localStorage).
+
+Formulaire principal (<main>) :
+
+- Choix du point de mesure (P1 à P20).
+- Bouton réinitialiser le formulaire.
+- Sélection de la session (AM/PM) et de l’heure.
+- Saisie des conditions de vent.
+- Saisie de l’intensité olfactive selon 10 catégories prédéfinies pour deux modes : "Continu" et "Bouffées".
+- Zone de commentaire libre.
+
+Pied de page (<footer>) :
+
+- Bouton pour enregistrer ou mettre à jour la mesure.
+- Bouton pour exporter l’ensemble des données au format Excel.
+
+2) Logique JavaScript
+
+Initialisation de la sélection juré via localStorage.
+
+Remplissage dynamique des points de mesure (P1 à P20) à l’ouverture.
+
+Catégories d’odeurs définies dans un tableau d’objets avec nom, code et couleur d’arrière-plan.
+
+Événements utilisateur :
+
+- Changement de point/session : charge les données existantes si présentes.
+- Saisie : marque le formulaire comme "non sauvegardé".
+- Bouton réinitialiser : remet à zéro les champs, après confirmation si besoin.
+- Bouton enregistrer : sauvegarde une ligne dans un dictionnaire dataMap, avec une clé point_session, persisté dans localStorage.
+- Bouton exporter : transforme dataMap en tableau Excel, avec ligne d’en-tête, via XLSX.js, et télécharge le fichier.
+
+Approche de développement et logique de structuration
+
+Le développement a suivi une approche incrémentale :
+- Prototype HTML/CSS d'abord pour valider l'ergonomie.
+- Ajout progressif des fonctionnalités JS, avec logique métier claire (localStorage → export).
+- Tests manuels sur différents navigateurs mobiles (Chrome Android principalement).
+- Validation par les utilisateurs finaux (jurés) sur le terrain.
+
+Pistes d’amélioration future (R&D)
+
+Plusieurs pistes d'amélioration ont été identifiées, pouvant faire l’objet de développements futurs dans le cadre du CIR :
+
+- Ajout de géolocalisation automatique du point de mesure (API GPS navigateur).
+- Stockage distant via API ou base de données cloud (Firebase, Supabase) pour usage collaboratif en temps réel.
+- Synthèse graphique (chart.js) des mesures enregistrées (camemberts par catégorie, radar…).
+- Ajout d'une validation/supervision à distance via interface administrateur.
+- Support multi-langue (internationalisation pour export ou partenaires).
+- Application mobile installable (PWA) pour un usage hors-ligne optimisé.
+
+Conclusion
+
+L’application "Airea | Jury de nez" est un outil simple, robuste et léger, conçu pour répondre à une problématique métier spécifique. Son développement a mobilisé des compétences en ergonomie, développement web, manipulation de données, et réflexion sur la structuration des entrées utilisateurs. Elle constitue un socle évolutif, et son perfectionnement entre pleinement dans le cadre du Crédit Impôt Recherche (CIR) par sa composante d’innovation technique, d’expérimentation et de prototypage.
